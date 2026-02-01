@@ -64,6 +64,19 @@
             opacity: 0.4;
         }
 
+        /* Mouse Glow Effect */
+        #mouse-glow {
+            position: fixed;
+            top: 0; left: 0;
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, var(--accent-primary) 0%, transparent 70%);
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: -1;
+            transform: translate(-50%, -50%);
+            transition: opacity 0.5s;
+        }
+
         /* Sidebar - Floating Glass */
         .sidebar {
             grid-area: sidebar;
@@ -208,6 +221,13 @@
             transition: all 0.4s var(--ease-out-expo);
             cursor: pointer;
             position: relative;
+            /* Entry Animation */
+            animation: slideUp 0.6s var(--ease-out-expo) both;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .track-card:hover {
@@ -222,28 +242,55 @@
             border-color: var(--accent-primary);
         }
 
+        /* Now Playing Animation */
+        .playing-indicator {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 12px;
+            width: 12px;
+            margin-right: 10px;
+        }
+        .playing-bar {
+            width: 2px;
+            background: var(--accent-primary);
+            animation: wave 1s infinite alternate;
+        }
+        @keyframes wave {
+            0% { height: 20%; }
+            100% { height: 100%; }
+        }
+
         .track-index {
             font-size: 14px;
             color: var(--text-mute);
             font-weight: 600;
+            display: flex;
+            align-items: center;
         }
 
         .track-cover-container {
             width: 50px;
             height: 50px;
             border-radius: 10px;
-            overflow: hidden;
+            overflow: visible; /* Allow shadow to pop */
             position: relative;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
-            /* Parallax Trigger */
             perspective: 500px;
+            transition: transform 0.1s ease-out;
         }
 
         .track-cover-img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.2s linear; /* Smooth for mouse move */
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+            transition: transform 0.1s ease-out, box-shadow 0.3s;
+            will-change: transform;
+        }
+
+        .track-card:hover .track-cover-img {
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6);
         }
 
         .track-info-main {
@@ -454,7 +501,19 @@
             transition: background 0.3s;
         }
 
+        input[type=range]::-moz-range-track {
+            height: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            transition: background 0.3s;
+            border: none;
+        }
+
         input[type=range]:hover::-webkit-slider-runnable-track {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        input[type=range]:hover::-moz-range-track {
             background: rgba(255, 255, 255, 0.2);
         }
 
@@ -470,7 +529,21 @@
             transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
+        input[type=range]::-moz-range-thumb {
+            height: 14px;
+            width: 14px;
+            background: #fff;
+            border-radius: 50%;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
         input[type=range]:active::-webkit-slider-thumb {
+            transform: scale(1.3);
+        }
+        
+        input[type=range]:active::-moz-range-thumb {
             transform: scale(1.3);
         }
 
@@ -715,9 +788,37 @@
             border-color: rgba(255,255,255,0.3);
             background: var(--glass-active);
         }
+
+        #drop-zone {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0, 122, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 4px dashed var(--accent-primary);
+            display: none;
+            pointer-events: none;
+        }
+        #drop-zone::after {
+            content: 'Drop files to upload';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 32px;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        /* Firefox Scrollbar */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--glass-border) transparent;
+        }
     </style>
 </head>
 <body>
+    <div id="mouse-glow"></div>
     <canvas id="bg-canvas"></canvas>
     <div id="drop-zone"></div>
     <div id="hotkey-hud"><div id="hud-icon"></div><div id="hud-text"></div></div>
@@ -820,7 +921,7 @@
         </div>
 
         <!-- Manual Sync Recording Overlay -->
-        <div id="tap-sync-overlay" style="position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(20px); z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px;">
+        <div id="tap-sync-overlay" style="position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px;">
             <div id="tap-sync-bg" style="position: absolute; inset: 0; z-index: -1; opacity: 0.2; filter: blur(100px);"></div>
             <div style="margin-bottom: 60px;">
                 <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 4px; color: var(--accent-primary); margin-bottom: 10px;">Recording Mode</h3>
@@ -971,7 +1072,15 @@
             }
 
             initParallax() {
+                const glow = document.getElementById('mouse-glow');
+                
                 document.addEventListener('mousemove', (e) => {
+                    // --- Mouse Glow ---
+                    if (glow) {
+                        glow.style.left = e.clientX + 'px';
+                        glow.style.top = e.clientY + 'px';
+                    }
+
                     const moveX = (e.clientX - window.innerWidth / 2) * 0.01;
                     const moveY = (e.clientY - window.innerHeight / 2) * 0.01;
                     
@@ -985,6 +1094,30 @@
                     const sidebar = document.querySelector('.sidebar');
                     if (sidebar) {
                         sidebar.style.transform = `translate(${moveX * 0.3}px, 0)`;
+                    }
+
+                    // --- Song Icons Parallax ---
+                    const card = e.target.closest('.track-card');
+                    if (card) {
+                        const img = card.querySelector('.track-cover-img');
+                        if (img) {
+                            const rect = card.getBoundingClientRect();
+                            const x = e.clientX - rect.left;
+                            const y = e.clientY - rect.top;
+                            
+                            const centerX = rect.width / 2;
+                            const centerY = rect.height / 2;
+                            
+                            const tiltX = (y - centerY) / 5; // vertical tilt
+                            const tiltY = (centerX - x) / 5; // horizontal tilt
+                            
+                            img.style.transform = `rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale(1.15)`;
+                        }
+                    } else {
+                        // Reset all icons not being hovered
+                        document.querySelectorAll('.track-cover-img').forEach(img => {
+                            img.style.transform = 'rotateX(0) rotateY(0) scale(1)';
+                        });
                     }
                 });
             }
@@ -1434,17 +1567,26 @@
             renderTrackList() {
                 const list = document.getElementById('lyrics-track-list');
                 if(!list) return;
-                list.innerHTML = state.musicList.map((m, i) => `
-                    <div class="ls-track-item" style="display: flex; gap: 12px; padding: 12px; border-radius: 12px; cursor: pointer; transition: 0.2s; margin-bottom: 8px; background: ${state.currentEditingTrackIndex === i ? 'var(--glass-active)' : 'transparent'}; border: 1px solid ${state.currentEditingTrackIndex === i ? 'var(--glass-border)' : 'transparent'};" onclick="lyricStudio.selectTrack(${i})">
-                        <div style="width: 44px; height: 44px; border-radius: 8px; overflow: hidden; background: #111;">
+                list.innerHTML = state.musicList.map((m, i) => {
+                    const isEditing = state.currentEditingTrackIndex === i;
+                    const hasLyrics = m.lyrics && m.lyrics.length > 0;
+                    
+                    return `
+                    <div class="ls-track-item" 
+                         style="display: flex; gap: 12px; padding: 12px; border-radius: 12px; cursor: pointer; transition: 0.3s; margin-bottom: 8px; 
+                                background: ${isEditing ? 'var(--glass-active)' : 'rgba(255,255,255,0.02)'}; 
+                                border: 1px solid ${isEditing ? 'var(--accent-primary)' : 'var(--glass-border)'};
+                                transform: ${isEditing ? 'scale(1.02)' : 'scale(1)'};" 
+                         onclick="lyricStudio.selectTrack(${i})">
+                        <div style="width: 44px; height: 44px; border-radius: 8px; overflow: hidden; background: #111; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
                             ${m.cover ? `<img src="${m.cover}" style="width: 100%; height: 100%; object-fit: cover;">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--text-mute);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></div>`}
                         </div>
-                        <div style="flex: 1; min-width: 0;">
-                            <div style="font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: ${state.currentEditingTrackIndex === i ? '#fff' : 'var(--text-dim)'};">${m.title}</div>
-                            <div style="font-size: 12px; color: var(--text-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${m.artist}</div>
+                        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;">
+                            <div style="font-weight: 700; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: ${isEditing ? '#fff' : 'var(--text-dim)'};">${m.title}</div>
+                            <div style="font-size: 11px; color: ${hasLyrics ? '#2ecc71' : 'var(--text-mute)'}; font-weight: 600;">${hasLyrics ? '● Synced' : '○ No Sync'}</div>
                         </div>
                     </div>
-                `).join('');
+                `}).join('');
             }
 
             selectTrack(index) {
@@ -1693,6 +1835,14 @@
                 this.play(prev);
             }
 
+            seek(seconds) {
+                if (!this.audio.src) return;
+                const newTime = this.audio.currentTime + seconds;
+                this.audio.currentTime = Math.max(0, Math.min(newTime, this.audio.duration));
+                this.updateProgressUI();
+                showHUD(seconds > 0 ? `+${seconds}s` : `${seconds}s`, `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5V3L7 7l5 4V9c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6h-2c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>`);
+            }
+
             updateProgressUI() {
                 const percent = this.audio.currentTime / this.audio.duration;
                 if (!isNaN(percent)) {
@@ -1823,6 +1973,9 @@
                 els.playIcon.innerHTML = state.isPlaying 
                     ? '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>' 
                     : '<path d="M5 3l14 9-14 9V3z"></path>';
+                
+                // Also refresh the music list to show/hide the animated bars
+                renderMusicList();
             }
 
             formatTime(sec) {
@@ -1868,9 +2021,21 @@
                     </div>`;
                 return;
             }
-            els.musicList.innerHTML = state.musicList.map((m, i) => `
-                <div class="track-card ${state.currentTrackIndex === i ? 'active' : ''}" onclick="playMusic(${i})">
-                    <div class="track-index">${i + 1}</div>
+            els.musicList.innerHTML = state.musicList.map((m, i) => {
+                const isActive = state.currentTrackIndex === i;
+                const isPlaying = isActive && state.isPlaying;
+                
+                return `
+                <div class="track-card ${isActive ? 'active' : ''}" onclick="playMusic(${i})" style="animation-delay: ${i * 0.05}s">
+                    <div class="track-index">
+                        ${isPlaying ? `
+                            <div class="playing-indicator">
+                                <div class="playing-bar" style="animation-delay: -0.2s"></div>
+                                <div class="playing-bar" style="animation-delay: -0.4s"></div>
+                                <div class="playing-bar" style="animation-delay: -0.1s"></div>
+                            </div>
+                        ` : (i + 1)}
+                    </div>
                     <div class="track-info-main">
                         <div class="track-cover-container">
                             ${m.cover ? `<img src="${m.cover}" class="track-cover-img">` : `
@@ -1892,7 +2057,7 @@
                         </button>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         // --- Init ---
@@ -1939,6 +2104,70 @@
         window.lyricStudio = lyricStudio;
 
         initProgressBar();
+        
+        // --- Global Hotkeys (Spotify Style) ---
+        window.addEventListener('keydown', (e) => {
+            // Ignore if user is typing in inputs
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            switch(e.code) {
+                case 'Space':
+                    e.preventDefault();
+                    engine.toggle();
+                    showHUD(state.isPlaying ? 'Play' : 'Pause', state.isPlaying ? '<path d="M8 5v14l11-7z"></path>' : '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>');
+                    break;
+                case 'ArrowRight':
+                    if (e.ctrlKey || e.metaKey) {
+                        engine.next();
+                        showHUD('Next');
+                    } else {
+                        engine.seek(10);
+                    }
+                    break;
+                case 'ArrowLeft':
+                    if (e.ctrlKey || e.metaKey) {
+                        engine.prev();
+                        showHUD('Previous');
+                    } else {
+                        engine.seek(-10);
+                    }
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    els.volumeRange.value = Math.min(100, parseInt(els.volumeRange.value) + 5);
+                    engine.audio.volume = els.volumeRange.value / 100;
+                    showHUD(`Volume ${els.volumeRange.value}%`);
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    els.volumeRange.value = Math.max(0, parseInt(els.volumeRange.value) - 5);
+                    engine.audio.volume = els.volumeRange.value / 100;
+                    showHUD(`Volume ${els.volumeRange.value}%`);
+                    break;
+                case 'KeyL':
+                    els.lyricsToggleBtn.click();
+                    break;
+                case 'KeyS':
+                    els.shuffleBtn.click();
+                    break;
+            }
+        });
+
+        // --- Drag & Drop Support ---
+        window.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            els.dropZone.style.display = 'block';
+        });
+        
+        els.dropZone.addEventListener('dragleave', () => {
+            els.dropZone.style.display = 'none';
+        });
+        
+        window.addEventListener('drop', (e) => {
+            e.preventDefault();
+            els.dropZone.style.display = 'none';
+            handleFiles(e.dataTransfer.files);
+        });
         
         // Load Data
         (async () => {
