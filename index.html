@@ -1184,7 +1184,7 @@
             });
         }
 
-        // --- Database (No Changes to Logic) ---
+        // --- Database & Storage ---
         class StorageManager {
             constructor() {
                 this.dbName = 'CosmicMediaDB';
@@ -1195,106 +1195,160 @@
             async init() {
                 if (!window.indexedDB) {
                     this.isSupported = false;
-                    throw new Error("IndexedDB not supported");
+                    return;
                 }
-                return new Promise((resolve, reject) => {
+                return new Promise((resolve) => {
                     try {
                         const request = indexedDB.open(this.dbName, this.dbVersion);
                         request.onupgradeneeded = (e) => {
                             const db = e.target.result;
                             if (!db.objectStoreNames.contains('media')) db.createObjectStore('media', { keyPath: 'id', autoIncrement: true });
                         };
-                        request.onsuccess = (e) => { this.db = e.target.result; resolve(); };
+                        request.onsuccess = (e) => { 
+                            this.db = e.target.result; 
+                            resolve(); 
+                        };
                         request.onerror = (e) => { 
+                            console.warn("IndexedDB error:", e.target.error);
                             this.isSupported = false;
-                            reject(e.target.error); 
+                            resolve(); 
                         };
                     } catch (e) {
+                        console.warn("IndexedDB catch error:", e);
                         this.isSupported = false;
-                        reject(e);
+                        resolve();
                     }
                 });
             }
             async saveMetadata(metadata) {
-                if (!this.db) return;
-                const tx = this.db.transaction('media', 'readwrite');
-                return new Promise((resolve, reject) => {
-                    const req = tx.objectStore('media').put(metadata);
-                    req.onsuccess = () => resolve(req.result);
-                    req.onerror = () => reject(req.error);
-                });
+                if (!this.db || !this.isSupported) return;
+                try {
+                    const tx = this.db.transaction('media', 'readwrite');
+                    return new Promise((resolve, reject) => {
+                        const req = tx.objectStore('media').put(metadata);
+                        req.onsuccess = () => resolve(req.result);
+                        req.onerror = () => reject(req.error);
+                    });
+                } catch (e) { console.error("Save metadata error:", e); }
             }
             async updateMetadata(metadata) { return this.saveMetadata(metadata); }
             async getAllMedia() {
-                if (!this.db) return [];
-                const tx = this.db.transaction('media', 'readonly');
-                return new Promise((resolve) => {
-                    tx.objectStore('media').getAll().onsuccess = (e) => resolve(e.target.result);
-                });
-            }
-            async clearAll() {
-                if (!this.db) return;
-                this.db.transaction('media', 'readwrite').objectStore('media').clear();
-                if (navigator.storage && navigator.storage.getDirectory) {
-                    const root = await navigator.storage.getDirectory();
-                    for await (const name of root.keys()) await root.removeEntry(name, { recursive: true });
-                }
+                if (!this.db || !this.isSupported) return [];
+                try {
+                    const tx = this.db.transaction('media', 'readonly');
+                    return new Promise((resolve) => {
+                        const req = tx.objectStore('media').getAll();
+                        req.onsuccess = (e) => resolve(e.target.result);
+                        req.onerror = () => resolve([]);
+                    });
+                } catch (e) { return []; }
             }
         }
         const storage = new StorageManager();
 
+        // Session-only fallback storage
+        const sessionStore = {
+            files: new Map(), // id -> File object
+            blobs: new Map()  // id -> Blob URL
+        };
+
         async function saveToOPFS(file, id) {
-            if (!navigator.storage || !navigator.storage.getDirectory) {
-                throw new Error("Ваш браузер или текущее окружение (Telegram/Local File) не поддерживает сохранение файлов. Пожалуйста, откройте сайт через полноценный браузер (Chrome/Edge) или используйте хостинг.");
+            try {
+                if (!navigator.storage || !navigator.storage.getDirectory) {
+                    throw new Error("OPFS not supported");
+                }
+                const root = await navigator.storage.getDirectory();
+                const sanitizedName = file.name.replace(/[<>:"/\\|?*]/g, '_');
+                const fileName = `${id}_${sanitizedName}`;
+                const fileHandle = await root.getFileHandle(fileName, { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(file);
+                await writable.close();
+                return fileName;
+            } catch (err) {
+                console.warn("OPFS Save failed, using session fallback:", err);
+                sessionStore.files.set(id, file);
+                return null; // Signal that it's in sessionStore
             }
-            const root = await navigator.storage.getDirectory();
-            const sanitizedName = file.name.replace(/[<>:"/\\|?*]/g, '_');
-            const fileName = `${id}_${sanitizedName}`;
-            const fileHandle = await root.getFileHandle(fileName, { create: true });
-            const writable = await fileHandle.createWritable();
-            await writable.write(file);
-            await writable.close();
-            return fileName;
         }
 
-        async function getFromOPFS(fileName) {
-            const root = await navigator.storage.getDirectory();
-            const fileHandle = await root.getFileHandle(fileName);
-            return await fileHandle.getFile();
+        async function getFile(track) {
+            if (track.opfsName) {
+                try {
+                    const root = await navigator.storage.getDirectory();
+                    const fileHandle = await root.getFileHandle(track.opfsName);
+                    return await fileHandle.getFile();
+                } catch (e) {
+                    console.error("Failed to get from OPFS:", e);
+                }
+            }
+            // Fallback to session store
+            if (sessionStore.files.has(track.id)) {
+                return sessionStore.files.get(track.id);
+            }
+            throw new Error("File not found");
         }
 
         async function handleFiles(files) {
             if (!files || !files.length) return;
-            if (!storage.db) await storage.init();
             
-            const loader = document.getElementById('loader');
-            loader.style.display = 'flex';
-            
-            let musicAdded = false, videoAdded = false;
+            let musicAdded = false;
+            let successCount = 0;
+            let failCount = 0;
 
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 try {
-                    const type = file.type.startsWith('audio/') ? 'music' : null;
-                    if (!type) continue;
+                    const isAudio = file.type.startsWith('audio/') || 
+                                   file.name.toLowerCase().endsWith('.mp3') || 
+                                   file.name.toLowerCase().endsWith('.wav') || 
+                                   file.name.toLowerCase().endsWith('.m4a') || 
+                                   file.name.toLowerCase().endsWith('.ogg');
+
+                    if (!isAudio) continue;
                     
                     const id = Date.now() + Math.floor(Math.random() * 1000000);
                     const opfsName = await saveToOPFS(file, id);
                     
-                    let metadata = { id, name: file.name, type, opfsName, addedAt: Date.now() };
+                    let metadata = { 
+                        id, 
+                        name: file.name, 
+                        type: 'music', 
+                        opfsName, 
+                        addedAt: Date.now(),
+                        isSessionOnly: !opfsName
+                    };
                     
-                    if (type === 'music') {
-                        metadata = await extractMusicMetadata(file, metadata);
+                    metadata = await extractMusicMetadata(file, metadata);
+                    
+                    if (storage.isSupported) {
                         await storage.saveMetadata(metadata);
-                        state.musicList.push(metadata);
-                        musicAdded = true;
                     }
-                } catch (err) { console.error(err); }
+                    
+                    state.musicList.push(metadata);
+                    musicAdded = true;
+                    successCount++;
+                } catch (err) { 
+                    console.error("File processing error:", err);
+                    failCount++;
+                }
             }
             
-            if (musicAdded) renderMusicList();
-            loader.style.display = 'none';
-            showHUD(`Added ${files.length} files`);
+            if (musicAdded) {
+                renderMusicList();
+                if (state.currentTab === 'lyrics') lyricStudio.renderTrackList();
+            }
+
+            if (successCount > 0) {
+                showHUD(`Added ${successCount} songs`);
+                if (failCount > 0) showToast(`${failCount} files failed`, 'error');
+                
+                if (!storage.isSupported || !navigator.storage?.getDirectory) {
+                    showToast("Note: Files added to this session only (won't persist)", "info");
+                }
+            } else if (failCount > 0) {
+                showToast("Failed to add files", "error");
+            }
         }
 
         async function extractMusicMetadata(file, meta) {
@@ -1508,7 +1562,7 @@
                 
                 try {
                     const track = state.musicList[state.currentEditingTrackIndex];
-                    const file = await getFromOPFS(track.opfsName);
+                    const file = await getFile(track);
                     const arrayBuffer = await file.arrayBuffer();
                     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                     const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
@@ -1584,7 +1638,7 @@
                 const track = state.musicList[index];
                 
                 try {
-                    const file = await getFromOPFS(track.opfsName);
+                    const file = await getFile(track);
                     const url = URL.createObjectURL(file);
                     if (this.audio.src) URL.revokeObjectURL(this.audio.src);
                     
@@ -1604,7 +1658,7 @@
                     if (!track.duration) {
                         this.audio.addEventListener('loadedmetadata', () => {
                             track.duration = this.audio.duration;
-                            storage.updateMetadata(track);
+                            if (storage.isSupported) storage.updateMetadata(track);
                             renderMusicList();
                         }, { once: true });
                     }
@@ -1778,48 +1832,30 @@
             }
         }
 
-        // --- Video Engine (Simplified) ---
-        const videoEls = {
-            video: document.getElementById('main-video'),
-            playPause: document.getElementById('video-play-pause'),
-            progressFill: document.getElementById('video-progress-fill'),
-            progressContainer: document.getElementById('video-progress-container')
-        };
-        
-        if (videoEls.video) {
-            videoEls.video.addEventListener('timeupdate', () => {
-                const p = (videoEls.video.currentTime / videoEls.video.duration) * 100;
-                if(videoEls.progressFill) videoEls.progressFill.style.width = `${p}%`;
-            });
-            if(videoEls.playPause) {
-                videoEls.playPause.addEventListener('click', () => {
-                    if(videoEls.video.paused) videoEls.video.play();
-                    else videoEls.video.pause();
-                });
-            }
-            if(videoEls.progressContainer) {
-                videoEls.progressContainer.addEventListener('click', (e) => {
-                    const rect = videoEls.progressContainer.getBoundingClientRect();
-                    const pos = (e.clientX - rect.left) / rect.width;
-                    videoEls.video.currentTime = pos * videoEls.video.duration;
-                });
-            }
-        }
-
-        async function playVideo(index) {
-            state.currentVideoIndex = index;
-            const v = state.videoList[index];
-            const file = await getFromOPFS(v.opfsName);
-            videoEls.video.src = URL.createObjectURL(file);
-            videoEls.video.play();
-        }
+        // --- UI Logic ---
 
         async function deleteMedia(id, type) {
             if(!confirm('Delete this item?')) return;
+             
+             const track = state.musicList.find(m => m.id === id);
+             if (track && track.opfsName) {
+                 try {
+                     const root = await navigator.storage.getDirectory();
+                     await root.removeEntry(track.opfsName);
+                 } catch (e) { console.warn("Failed to delete file from OPFS:", e); }
+             }
+             
+             sessionStore.files.delete(id);
              state.musicList = state.musicList.filter(m => m.id !== id);
-             const tx = storage.db.transaction('media', 'readwrite');
-             tx.objectStore('media').delete(id);
+             
+             if (storage.isSupported && storage.db) {
+                 const tx = storage.db.transaction('media', 'readwrite');
+                 tx.objectStore('media').delete(id);
+             }
+             
              renderMusicList();
+             if (state.currentTab === 'lyrics') lyricStudio.renderTrackList();
+             showHUD("Deleted track");
         }
 
         function renderMusicList() {
