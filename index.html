@@ -273,10 +273,9 @@
             width: 50px;
             height: 50px;
             border-radius: 10px;
-            overflow: visible; /* Allow shadow to pop */
+            overflow: hidden;
             position: relative;
-            perspective: 500px;
-            transition: transform 0.1s ease-out;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
         }
 
         .track-cover-img {
@@ -284,13 +283,11 @@
             height: 100%;
             object-fit: cover;
             border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
-            transition: transform 0.1s ease-out, box-shadow 0.3s;
-            will-change: transform;
+            transition: transform 0.3s var(--ease-ios);
         }
 
         .track-card:hover .track-cover-img {
-            box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+            transform: scale(1.1);
         }
 
         .track-info-main {
@@ -597,17 +594,31 @@
             flex-direction: column;
             align-items: center; /* Center the art in its column */
             justify-content: center;
+            gap: 40px; /* Space between art and controls */
+        }
+
+        .lyrics-controls {
+            display: flex; 
+            align-items: center; 
+            gap: 30px; 
+            background: rgba(255,255,255,0.05); 
+            padding: 12px 30px; 
+            border-radius: 100px; 
+            border: 1px solid var(--glass-border); 
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px);
+            margin-top: 20px;
         }
 
         .lyrics-cover-large {
             width: 35vw; /* Responsive width */
             height: 35vw;
-            max-width: 600px;
-            max-height: 600px;
-            border-radius: 32px;
+            max-width: 500px;
+            max-height: 500px;
+            border-radius: 24px;
             box-shadow: 0 50px 150px rgba(0,0,0,0.9);
             object-fit: cover;
-            transition: transform 0.5s var(--ease-ios);
+            /* Removed transition for parallax */
         }
 
         .lyrics-scroll-column {
@@ -827,7 +838,7 @@
     <!-- Immersive Fullscreen Lyrics -->
     <div id="lyrics-overlay-fs">
         <div class="lyrics-bg-blur" id="lyrics-bg"></div>
-        <button id="close-lyrics-btn" style="position: absolute; top: 40px; right: 40px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 50%; padding: 15px; color: #fff; cursor: pointer; transition: all 0.3s var(--ease-ios);"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+        <button id="close-lyrics-btn" style="position: fixed; top: 40px; right: 40px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 50%; padding: 15px; color: #fff; cursor: pointer; transition: all 0.3s var(--ease-ios); z-index: 2100;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
         
         <div class="lyrics-wrapper">
             <div class="lyrics-art-column">
@@ -836,6 +847,13 @@
                     <div id="lyrics-art-fallback" class="lyrics-cover-large" style="background: linear-gradient(135deg, #1c1c1e, #020205); display:flex; align-items:center; justify-content:center;">
                         <svg width="100" height="100" viewBox="0 0 24 24" fill="rgba(255,255,255,0.05)"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
                     </div>
+                </div>
+                
+                <!-- Controls Moved Under Art -->
+                <div class="lyrics-controls">
+                    <button class="control-btn" id="lyrics-prev-btn" style="opacity: 1;"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M19 20L9 12l10-8v16zM5 19V5h2v14H5z"/></svg></button>
+                    <button class="control-btn play-main" id="lyrics-play-btn" style="width: 56px; height: 56px; background: #fff; color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 1;"><svg id="lyrics-play-icon" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+                    <button class="control-btn" id="lyrics-next-btn" style="opacity: 1;"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M5 4l10 8-10 8V4zm14 1h-2v14h2V5z"/></svg></button>
                 </div>
             </div>
             <div class="lyrics-scroll-column">
@@ -932,6 +950,17 @@
                 <div id="tap-prev-line" style="font-size: 24px; color: var(--text-mute); opacity: 0.5; transition: all 0.3s;"></div>
                 <div id="tap-current-line" style="font-size: 48px; font-weight: 800; color: #fff; text-shadow: 0 0 30px var(--accent-glow); transition: all 0.3s;">Get Ready...</div>
                 <div id="tap-next-line" style="font-size: 24px; color: var(--text-mute); opacity: 0.5; transition: all 0.3s;"></div>
+            </div>
+
+            <!-- Lyric Studio Scrubber -->
+            <div style="width: 100%; max-width: 600px; margin-top: 40px;">
+                <div class="progress-container" style="margin-bottom: 10px;">
+                    <span id="tap-current-time">0:00</span>
+                    <div class="progress-track" id="tap-scrubber" style="height: 6px; cursor: pointer;">
+                        <div class="progress-fill" id="tap-progress-fill" style="transition: none;"></div>
+                    </div>
+                    <span id="tap-duration-time">0:00</span>
+                </div>
             </div>
 
             <div style="position: absolute; bottom: 60px; display: flex; flex-direction: column; align-items: center; gap: 20px;">
@@ -1067,6 +1096,10 @@
                 if (typeof engine !== 'undefined') {
                     engine.updateLyricsUI();
                 }
+                
+                if (typeof lyricStudio !== 'undefined' && lyricStudio.isManualSyncing) {
+                    lyricStudio.updateTapUI();
+                }
 
                 requestAnimationFrame(() => this.animate());
             }
@@ -1097,28 +1130,10 @@
                     }
 
                     // --- Song Icons Parallax ---
-                    const card = e.target.closest('.track-card');
-                    if (card) {
-                        const img = card.querySelector('.track-cover-img');
-                        if (img) {
-                            const rect = card.getBoundingClientRect();
-                            const x = e.clientX - rect.left;
-                            const y = e.clientY - rect.top;
-                            
-                            const centerX = rect.width / 2;
-                            const centerY = rect.height / 2;
-                            
-                            const tiltX = (y - centerY) / 5; // vertical tilt
-                            const tiltY = (centerX - x) / 5; // horizontal tilt
-                            
-                            img.style.transform = `rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale(1.15)`;
-                        }
-                    } else {
-                        // Reset all icons not being hovered
-                        document.querySelectorAll('.track-cover-img').forEach(img => {
-                            img.style.transform = 'rotateX(0) rotateY(0) scale(1)';
-                        });
-                    }
+                    // (Removed as requested)
+
+                    // --- Lyrics Large Art Parallax ---
+                    // (Removed as requested)
                 });
             }
         }
@@ -1169,13 +1184,47 @@
         // --- Progress Bar Logic ---
         function initProgressBar() {
             if (!els.waveformContainer) return;
-            els.waveformContainer.addEventListener('click', (e) => {
+
+            const handleSeek = (e) => {
                 const rect = els.waveformContainer.getBoundingClientRect();
-                const x = e.clientX - rect.left;
+                const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
                 const percent = Math.max(0, Math.min(1, x / rect.width));
-                if (state.currentTab === 'music' && engine.audio.duration) {
+                if (engine.audio.duration) {
                     engine.audio.currentTime = percent * engine.audio.duration;
+                    updateProgressUI(percent);
                 }
+            };
+
+            let isDragging = false;
+
+            els.waveformContainer.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                handleSeek(e);
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (isDragging) handleSeek(e);
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+
+            // Touch support
+            els.waveformContainer.addEventListener('touchstart', (e) => {
+                isDragging = true;
+                handleSeek(e);
+            }, { passive: false });
+
+            window.addEventListener('touchmove', (e) => {
+                if (isDragging) {
+                    e.preventDefault();
+                    handleSeek(e);
+                }
+            }, { passive: false });
+
+            window.addEventListener('touchend', () => {
+                isDragging = false;
             });
         }
 
@@ -1532,10 +1581,34 @@
                 const pauseBtn = document.getElementById('pause-sync-btn');
                 if(pauseBtn) pauseBtn.addEventListener('click', () => this.togglePause());
 
+                // Tap Scrubber Logic
+                const tapScrubber = document.getElementById('tap-scrubber');
+                if (tapScrubber) {
+                    const handleTapSeek = (e) => {
+                        const rect = tapScrubber.getBoundingClientRect();
+                        const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+                        const percent = Math.max(0, Math.min(1, x / rect.width));
+                        if (engine.audio.duration) {
+                            engine.audio.currentTime = percent * engine.audio.duration;
+                            this.updateTapUI();
+                        }
+                    };
+
+                    let isDragging = false;
+                    tapScrubber.addEventListener('mousedown', (e) => { isDragging = true; handleTapSeek(e); });
+                    window.addEventListener('mousemove', (e) => { if (isDragging) handleTapSeek(e); });
+                    window.addEventListener('mouseup', () => { isDragging = false; });
+                    
+                    tapScrubber.addEventListener('touchstart', (e) => { isDragging = true; handleTapSeek(e); }, {passive:false});
+                    window.addEventListener('touchmove', (e) => { if (isDragging) handleTapSeek(e); }, {passive:false});
+                    window.addEventListener('touchend', () => { isDragging = false; });
+                }
+
                 window.addEventListener('keydown', (e) => {
                     if (this.isManualSyncing) {
                         if (e.code === 'Space') {
                             e.preventDefault();
+                            e.stopImmediatePropagation(); // Stop global hotkey completely
                             if (!this.isPaused) this.markNextLine();
                         } else if (e.code === 'Escape' || e.key.toLowerCase() === 'p') {
                             e.preventDefault();
@@ -1670,11 +1743,21 @@
                 const curr = document.getElementById('tap-current-line');
                 const next = document.getElementById('tap-next-line');
                 const prog = document.getElementById('tap-progress-text');
+                
+                const curTimeEl = document.getElementById('tap-current-time');
+                const durTimeEl = document.getElementById('tap-duration-time');
+                const fill = document.getElementById('tap-progress-fill');
 
                 if(prev) prev.textContent = this.manualIndex > 0 ? this.manualLines[this.manualIndex - 1] : '';
                 if(curr) curr.textContent = this.manualIndex < this.manualLines.length ? this.manualLines[this.manualIndex] : 'All Done!';
                 if(next) next.textContent = this.manualIndex + 1 < this.manualLines.length ? this.manualLines[this.manualIndex + 1] : '';
                 if(prog) prog.textContent = `${this.manualIndex} / ${this.manualLines.length} lines`;
+                
+                if (curTimeEl) curTimeEl.textContent = engine.formatTime(engine.audio.currentTime);
+                if (durTimeEl) durTimeEl.textContent = engine.formatTime(engine.audio.duration || 0);
+                if (fill && engine.audio.duration) {
+                    fill.style.width = `${(engine.audio.currentTime / engine.audio.duration) * 100}%`;
+                }
             }
 
             finishManualSync(cancelled = false) {
@@ -1779,6 +1862,16 @@
                 if (index < 0 || index >= state.musicList.length) return;
                 const track = state.musicList[index];
                 
+                // If it's the same track, just resume
+                if (state.currentTrackIndex === index && this.audio.src) {
+                    if (this.audio.paused) {
+                        this.audio.play();
+                        state.isPlaying = true;
+                        this.updatePlayBtn();
+                    }
+                    return;
+                }
+
                 try {
                     const file = await getFile(track);
                     const url = URL.createObjectURL(file);
@@ -1793,7 +1886,6 @@
                     this.updateMetadataUI(track);
                     this.updatePlayBtn();
                     this.renderLyrics(track);
-                    renderMusicList();
                     updateAccentColor(track.cover);
                     
                     // Update duration if not present
@@ -1801,7 +1893,13 @@
                         this.audio.addEventListener('loadedmetadata', () => {
                             track.duration = this.audio.duration;
                             if (storage.isSupported) storage.updateMetadata(track);
-                            renderMusicList();
+                            
+                            // Update specific row duration without full re-render
+                            const rows = document.querySelectorAll('.track-card');
+                            if (rows[index]) {
+                                const durEl = rows[index].querySelector('.track-duration');
+                                if (durEl) durEl.textContent = this.formatTime(this.audio.duration);
+                            }
                         }, { once: true });
                     }
                 } catch (err) {
@@ -1970,12 +2068,35 @@
             }
 
             updatePlayBtn() {
-                els.playIcon.innerHTML = state.isPlaying 
+                const icon = state.isPlaying 
                     ? '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>' 
                     : '<path d="M5 3l14 9-14 9V3z"></path>';
                 
-                // Also refresh the music list to show/hide the animated bars
-                renderMusicList();
+                els.playIcon.innerHTML = icon;
+                
+                const lyricsPlayIcon = document.getElementById('lyrics-play-icon');
+                if (lyricsPlayIcon) lyricsPlayIcon.innerHTML = icon;
+                
+                // Update specific row without re-rendering everything
+                const rows = document.querySelectorAll('.track-card');
+                rows.forEach((row, i) => {
+                    const indexEl = row.querySelector('.track-index');
+                    if (i === state.currentTrackIndex) {
+                        row.classList.add('active');
+                        if (indexEl) {
+                            indexEl.innerHTML = state.isPlaying ? `
+                                <div class="playing-indicator">
+                                    <div class="playing-bar" style="animation-delay: -0.2s"></div>
+                                    <div class="playing-bar" style="animation-delay: -0.4s"></div>
+                                    <div class="playing-bar" style="animation-delay: -0.1s"></div>
+                                </div>
+                            ` : (i + 1);
+                        }
+                    } else {
+                        row.classList.remove('active');
+                        if (indexEl) indexEl.innerHTML = (i + 1);
+                    }
+                });
             }
 
             formatTime(sec) {
@@ -2077,6 +2198,14 @@
         els.playBtn.addEventListener('click', () => engine.toggle());
         document.getElementById('next-btn').addEventListener('click', () => engine.next());
         document.getElementById('prev-btn').addEventListener('click', () => engine.prev());
+
+        // Lyrics View Controls
+        const lPlay = document.getElementById('lyrics-play-btn');
+        const lNext = document.getElementById('lyrics-next-btn');
+        const lPrev = document.getElementById('lyrics-prev-btn');
+        if (lPlay) lPlay.addEventListener('click', () => engine.toggle());
+        if (lNext) lNext.addEventListener('click', () => engine.next());
+        if (lPrev) lPrev.addEventListener('click', () => engine.prev());
         
         if (els.playAllBtn) {
             els.playAllBtn.addEventListener('click', () => {
