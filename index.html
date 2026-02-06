@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cosmic Media Center 2026</title>
+    <title>Cosmic Media Player</title>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link id="google-fonts-link" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- External Libraries (CDN) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
@@ -26,6 +26,7 @@
             --accent-primary: #007AFF; /* iOS Blue */
             --accent-glow: rgba(0, 122, 255, 0.5);
             --accent-apple: #fa243c;
+            --accent: var(--accent-apple);
             
             --text-main: #ffffff;
             --text-dim: #a1a1aa;
@@ -36,23 +37,37 @@
             --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
             
             /* High-Res Scale Adjustments */
-            --base-scale: 1.1; /* Scale everything up by 10% */
+            --base-scale: 1.2; /* Scale everything up by 20% */
+            
+            /* Legacy Compat */
+            --bg-body: var(--bg-deep);
+            --font-main: var(--font-apple);
         }
 
-        html {
-            font-size: calc(16px * var(--base-scale));
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            overflow: hidden !important;
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overscroll-behavior: none;
+            position: fixed; /* Nuclear option to stop scrolling */
+            background-color: var(--bg-deep); /* Ensure background covers everything */
         }
 
         body {
             background-color: var(--bg-deep);
             color: var(--text-main);
             font-family: var(--font-apple);
-            height: 100vh;
-            overflow: hidden;
             display: grid;
             grid-template-areas: "sidebar main";
             grid-template-columns: 320px 1fr;
             perspective: 1000px;
+            user-select: none;
         }
 
         /* Animated Mesh Background */
@@ -89,6 +104,9 @@
             flex-direction: column;
             gap: 40px;
             z-index: 10;
+            height: 100vh;
+            box-sizing: border-box;
+            transition: transform 0.3s var(--ease-ios);
         }
 
         .logo-container {
@@ -103,11 +121,16 @@
             background: linear-gradient(135deg, var(--accent-primary), #5856D6);
             border-radius: 8px;
             box-shadow: 0 0 20px var(--accent-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
         }
         .logo-text {
             font-size: 20px;
             font-weight: 700;
             letter-spacing: -0.5px;
+            color: #fff;
         }
 
         .nav-group {
@@ -169,23 +192,60 @@
             width: 22px;
             height: 22px;
             stroke-width: 1.5;
+            transition: all 0.3s var(--ease-ios);
         }
 
-        /* Main Content */
+        /* Main Content Layout Fix */
         .main-content {
             grid-area: main;
-            overflow-y: auto;
-            padding: 60px 50px 120px 50px;
+            height: 100vh;
+            overflow: hidden; /* Fix body scroll */
+            display: flex;
+            flex-direction: column;
             position: relative;
             scrollbar-width: none;
         }
         .main-content::-webkit-scrollbar { display: none; }
+
+        .view {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow-y: auto; /* Allow scrolling within views */
+            min-height: 0; /* Crucial for nested scroll */
+            padding: 0;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s var(--ease-ios), transform 0.4s var(--ease-ios);
+            position: absolute;
+            inset: 0;
+            transform: translateY(10px);
+            scrollbar-width: none; /* Hide scrollbar Firefox */
+        }
+        
+        .view::-webkit-scrollbar { display: none; } /* Hide scrollbar Chrome/Safari */
+        
+        .view.active {
+            opacity: 1;
+            pointer-events: all;
+            position: relative;
+            transform: translateY(0);
+        }
+
+        /* Music View Layout */
+        #music-view {
+            padding: 60px 50px 200px 50px; /* Increased bottom padding */
+            overflow-y: auto; /* Allow view scrolling */
+            min-height: 0; /* Ensure inner list can scroll */
+            height: 100%;
+        }
 
         .header-bar {
             margin-bottom: 50px;
             display: flex;
             align-items: flex-end;
             justify-content: space-between;
+            flex-shrink: 0;
         }
 
         .view-title {
@@ -198,17 +258,36 @@
             -webkit-text-fill-color: transparent;
             animation: shine 5s linear infinite;
         }
+        
+        /* Form Controls */
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-color: rgba(20,20,24,0.6);
+            color: #fff;
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 10px 14px;
+        }
+        select:focus { outline: none; border-color: var(--accent-primary); }
+        option { background: #0b0b0b; color: #fff; }
 
         @keyframes shine {
             to { background-position: 200% center; }
         }
 
-        /* Immersive Track List */
-        .track-grid {
+        /* Scrollable Track List */
+        #music-list {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 20px;
             display: flex;
             flex-direction: column;
             gap: 10px;
+            scrollbar-width: none;
         }
+        #music-list::-webkit-scrollbar { display: none; }
 
         .track-card {
             background: var(--glass-bg);
@@ -221,7 +300,7 @@
             transition: all 0.4s var(--ease-out-expo);
             cursor: pointer;
             position: relative;
-            /* Entry Animation */
+            gap: 20px;
             animation: slideUp 0.6s var(--ease-out-expo) both;
         }
 
@@ -270,8 +349,8 @@
         }
 
         .track-cover-container {
-            width: 50px;
-            height: 50px;
+            width: 44px;
+            height: 44px;
             border-radius: 10px;
             overflow: hidden;
             position: relative;
@@ -283,17 +362,36 @@
             height: 100%;
             object-fit: cover;
             border-radius: 10px;
-            transition: transform 0.3s var(--ease-ios);
+            transition: transform 0.2s var(--ease-ios);
+            will-change: transform;
+            transform: translate(var(--tx, 0), var(--ty, 0)) scale(1);
         }
 
         .track-card:hover .track-cover-img {
-            transform: scale(1.1);
+            transform: translate(var(--tx, 0), var(--ty, 0)) scale(1.08);
         }
 
         .track-info-main {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 16px;
+        }
+        .track-cover-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            width: 72px;
+            flex-shrink: 0;
+        }
+        .track-artist-under {
+            font-size: 12px;
+            color: var(--text-dim);
+            text-align: center;
+            max-width: 80px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .track-titles {
@@ -326,31 +424,195 @@
             font-variant-numeric: tabular-nums;
         }
 
-        /* Premium Player Bar */
+        /* Lyric Studio Layout Fix */
+        .lyric-studio-container {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            height: 100%;
+            padding: 40px 40px 140px 40px;
+            overflow: hidden;
+        }
+
+        .ls-sidebar {
+            background: rgba(10, 10, 12, 0.4);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .ls-track-list-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .ls-main {
+            background: rgba(10, 10, 12, 0.4);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow: hidden;
+        }
+
+        .ls-editor-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            flex: 1;
+            min-height: 0; /* Crucial for nested scroll */
+        }
+
+        .editor-column {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        textarea.glass-input, .glass-panel {
+            flex: 1;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            color: #fff;
+            padding: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            resize: none;
+            line-height: 1.6;
+            outline: none;
+            transition: 0.3s;
+            overflow-y: auto;
+        }
+        
+        textarea.glass-input:focus {
+            border-color: var(--accent-primary);
+            background: rgba(0,0,0,0.5);
+        }
+
+        /* Player Bar - Premium Docked */
         .player-bar {
             position: fixed;
-            bottom: 30px;
-            left: 310px; /* Sidebar + gap */
-            right: 30px;
+            bottom: 0;
+            left: 320px; /* Match sidebar width */
+            right: 0;
             height: 90px;
-            background: rgba(15, 15, 20, 0.7);
-            backdrop-filter: blur(40px);
-            -webkit-backdrop-filter: blur(40px);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
+            background: rgba(10, 10, 15, 0.85); /* Slightly more opaque for better contrast */
+            backdrop-filter: blur(50px);
+            -webkit-backdrop-filter: blur(50px);
+            border-top: 1px solid var(--glass-border);
+            border-left: none;
+            border-right: none;
+            border-bottom: none;
+            border-radius: 0;
             display: grid;
             grid-template-columns: 1fr 1.5fr 1fr;
-            padding: 0 25px;
+            padding: 0 30px;
             align-items: center;
             z-index: 1000;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
             transition: all 0.5s var(--ease-ios);
+        }
+
+        /* Hide Player Bar in Lyrics Mode */
+        body.lyrics-open .player-bar {
+            display: none !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            visibility: hidden !important;
         }
 
         .player-left {
             display: flex;
             align-items: center;
             gap: 16px;
+            width: 320px;
+            flex-shrink: 0;
+        }
+        .cover-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            width: 54px;
+        }
+        .cover-artist {
+            font-size: 12px;
+            color: var(--text-dim);
+            text-align: center;
+            max-width: 120px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .player-info-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .track-titles {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            margin-bottom: 2px;
+        }
+
+        .track-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+        }
+
+        .track-artist {
+            font-size: 13px;
+            color: var(--text-dim);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+            margin-bottom: 4px;
+        }
+
+        .player-volume-mini {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 0.4;
+            transition: all 0.3s;
+            width: 90px;
+        }
+
+        .player-volume-mini:hover {
+            opacity: 1;
+        }
+
+        .player-volume-mini input[type=range] {
+            height: 6px !important;
+        }
+
+        .player-volume-mini input[type=range]::-webkit-slider-runnable-track {
+            height: 6px !important;
+        }
+
+        .player-volume-mini input[type=range]::-webkit-slider-thumb {
+            height: 14px !important;
+            width: 14px !important;
+            margin-top: -4px !important;
         }
 
         .player-cover-wrap {
@@ -364,6 +626,12 @@
         
         #music-cover {
             width: 100%; height: 100%; object-fit: cover;
+            will-change: transform;
+            transition: transform 0.25s var(--ease-ios);
+        }
+        #fallback-cover {
+            will-change: transform;
+            transition: transform 0.25s var(--ease-ios);
         }
 
         .player-center {
@@ -463,7 +731,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            width: 140px;
+            width: 200px;
             padding: 0 10px;
         }
 
@@ -476,6 +744,44 @@
 
         .volume-group:hover .volume-icon {
             opacity: 1;
+        }
+        
+        .volume-range {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 999px;
+            outline: none;
+        }
+        .volume-range::-webkit-slider-runnable-track {
+            height: 6px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 999px;
+        }
+        .volume-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            margin-top: -4px;
+        }
+        .volume-range::-moz-range-track {
+            height: 6px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 999px;
+        }
+        .volume-range::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            border: none;
         }
 
         /* Beautiful Range Slider */
@@ -549,7 +855,7 @@
             position: fixed;
             inset: 0;
             background: #000;
-            z-index: 2000;
+            z-index: 2147483647; /* Max Z-Index */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -581,56 +887,111 @@
             display: grid;
             grid-template-columns: 1fr 1.5fr;
             width: 100%;
-            max-width: 100%; /* Use full width */
+            max-width: 100%;
             height: 100vh;
             gap: 100px;
-            padding: 80px 100px;
-            align-items: center;
+            padding: 0; /* Remove padding from wrapper to ensure full height calc */
+            align-items: stretch; /* Ensure columns take full height */
             overflow: hidden;
+            box-sizing: border-box;
         }
 
         .lyrics-art-column {
             display: flex;
             flex-direction: column;
-            align-items: center; /* Center the art in its column */
+            align-items: center;
             justify-content: center;
-            gap: 40px; /* Space between art and controls */
+            gap: 40px;
+            height: 100%; /* Explicit height */
+            overflow: hidden; /* Ensure content doesn't push bounds */
+            padding: 60px; /* Internal padding */
+            position: relative; /* Keep it positioned */
+        }
+        
+        /* ... */
+
+        .lyrics-scroll-column {
+            height: 100%;
+            overflow-y: auto;
+            mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+            scrollbar-width: none;
+            display: flex;
+            flex-direction: column;
+            padding: 120px 0;
+            width: 100%;
+            overscroll-behavior: contain; /* Strict containment */
+            position: relative;
+        }
+        .lyrics-artist-under-art {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            opacity: 1;
+            text-align: center;
+            margin-top: 16px;
+            background: rgba(255, 255, 255, 0.05); /* Lighter glass */
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            padding: 10px 20px;
+            border-radius: 99px; /* Pill shape */
+            border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle border */
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2); /* Softer shadow */
+            display: inline-block;
         }
 
-        .lyrics-controls {
-            display: flex; 
-            align-items: center; 
-            gap: 30px; 
-            background: rgba(255,255,255,0.05); 
-            padding: 12px 30px; 
-            border-radius: 100px; 
-            border: 1px solid var(--glass-border); 
-            backdrop-filter: blur(20px); 
-            -webkit-backdrop-filter: blur(20px);
-            margin-top: 20px;
+        .lyrics-unified-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.08); /* Lighter, more glass-like */
+            padding: 20px 25px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            margin-top: 25px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+
+        .lyrics-controls-row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 10px;
         }
 
         .lyrics-cover-large {
-            width: 35vw; /* Responsive width */
+            width: 35vw;
             height: 35vw;
             max-width: 500px;
             max-height: 500px;
             border-radius: 24px;
             box-shadow: 0 50px 150px rgba(0,0,0,0.9);
             object-fit: cover;
-            /* Removed transition for parallax */
+            will-change: transform;
+            transition: transform 0.25s var(--ease-ios);
+            transform-style: preserve-3d;
         }
 
         .lyrics-scroll-column {
-            height: 85vh;
-            overflow-y: scroll;
+            height: 100%;
+            overflow-y: auto;
             mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
             -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
             scrollbar-width: none;
             display: flex;
             flex-direction: column;
-            padding: 200px 0;
-            width: 100%; /* Ensure full width for text */
+            padding: 120px 0 50vh 0; /* Huge bottom padding */
+            width: 100%;
+            overscroll-behavior: contain;
+            position: relative;
         }
         .lyrics-scroll-column::-webkit-scrollbar { display: none; }
 
@@ -639,7 +1000,7 @@
             font-weight: 800;
             color: rgba(255,255,255,0.15);
             margin: 32px 0;
-            transition: transform 0.6s var(--ease-ios), filter 0.6s var(--ease-ios);
+            transition: transform 0.3s var(--ease-ios), filter 0.3s var(--ease-ios); /* Faster transition */
             cursor: pointer;
             line-height: 1.2;
             letter-spacing: -2px;
@@ -649,8 +1010,8 @@
             flex-wrap: wrap;
             gap: 12px;
             will-change: transform, filter;
-            width: 100%; /* Ensure line can use full width */
-            max-width: 900px; /* Cap for readability but allow plenty of room */
+            width: 100%;
+            max-width: 900px;
         }
 
         .lyric-word {
@@ -660,7 +1021,7 @@
         }
 
         .fs-lyric-line.active {
-            color: rgba(255,255,255,0.25); /* Base color for words in active line */
+            color: rgba(255,255,255,0.25);
             transform: scale(1.05);
             opacity: 1;
         }
@@ -676,6 +1037,94 @@
 
         .fs-lyric-line:hover {
             color: rgba(255,255,255,0.4);
+        }
+
+        /* Estimate Button */
+        .btn-glass {
+            padding: 12px 20px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+        .btn-glass:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.2);
+        }
+        .btn-accent {
+            background: var(--accent-primary);
+            border: none;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+        .btn-accent:hover {
+            filter: brightness(1.2);
+        }
+
+
+        /* Toast Notifications */
+        .toast {
+            background: rgba(20, 20, 25, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            padding: 16px 20px;
+            border-radius: 16px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: toastSlide 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 350px;
+        }
+        
+        .toast.success { border-left: 4px solid #10b981; }
+        .toast.error { border-left: 4px solid #ef4444; }
+        .toast.info { border-left: 4px solid #3b82f6; }
+
+        
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        @keyframes toastSlide {
+            from { opacity: 0; transform: translateX(50px) scale(0.9); }
+            to { opacity: 1; transform: translateX(0) scale(1); }
+        }
+
+        .logo-icon {
+            width: 48px; /* Increased size */
+            height: 48px; /* Increased size */
+            background: transparent;
+            border-radius: 0;
+            box-shadow: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+        .logo-svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 10px var(--accent-glow));
+            /* Animation removed to prevent glitching */
         }
 
         /* Utils */
@@ -821,6 +1270,271 @@
             color: #fff;
         }
 
+        /* Mini Mode */
+        body.mini-mode .sidebar { display: none; }
+        body.mini-mode .main-content { display: none; }
+        body.mini-mode .player-bar {
+            left: 0; right: 0; bottom: 0;
+            height: 100vh;
+            border-radius: 0;
+            background: rgba(0,0,0,0.8);
+            grid-template-areas: 
+                "info"
+                "controls"
+                "progress";
+            grid-template-columns: 1fr;
+            grid-template-rows: 1fr auto auto;
+            padding: 40px;
+            gap: 20px;
+        }
+        body.mini-mode .player-left {
+            grid-area: info;
+            flex-direction: column;
+            justify-content: center;
+        }
+        body.mini-mode .player-cover-wrap {
+            width: 200px; height: 200px;
+            margin-bottom: 20px;
+        }
+        body.mini-mode .track-titles {
+            text-align: center;
+            align-items: center;
+        }
+        body.mini-mode .track-name { font-size: 24px; }
+        body.mini-mode .track-artist { font-size: 18px; }
+        body.mini-mode .player-center {
+            grid-area: controls;
+        }
+        body.mini-mode .player-right {
+            position: absolute;
+            top: 20px; right: 20px;
+        }
+        body.mini-mode .volume-group { display: none; }
+        
+        /* Zen Mode */
+        body.zen-mode .sidebar { display: none; }
+        body.zen-mode .header-bar { display: none; }
+        body.zen-mode .main-content { padding-top: 20px; }
+        body.zen-mode { grid-template-columns: 1fr; grid-template-areas: "main"; }
+
+        /* Social / Chat View */
+        .social-container {
+            display: grid;
+            grid-template-columns: 240px 1fr 240px;
+            height: 100%;
+            gap: 20px;
+            overflow: hidden;
+        }
+
+        .chat-sidebar {
+            background: rgba(0,0,0,0.2);
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .channel-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .channel-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-mute);
+            margin-bottom: 5px;
+            padding-left: 10px;
+        }
+
+        .channel-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            padding: 10px 12px;
+            border-radius: 8px;
+            text-align: left;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .channel-btn:hover {
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+        }
+
+        .channel-btn.active {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .chat-main {
+            background: rgba(0,0,0,0.2);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.02);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--glass-active);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .msg-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-width: 80%;
+        }
+
+        .msg-header {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .username {
+            font-weight: 600;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .timestamp {
+            font-size: 11px;
+            color: var(--text-mute);
+        }
+
+        .msg-text {
+            color: var(--text-dim);
+            font-size: 14px;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+        
+        /* Rich Presence Embed */
+        .song-embed {
+            margin-top: 8px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 300px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .song-embed:hover {
+            background: rgba(255,255,255,0.08);
+            transform: translateY(-2px);
+        }
+
+        .chat-input-area {
+            padding: 20px;
+            background: rgba(0,0,0,0.3);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border: none;
+            border-radius: 8px;
+            padding: 12px 15px;
+            color: #fff;
+            font-family: inherit;
+        }
+        .chat-input:focus { outline: 1px solid var(--accent-primary); }
+
+        .members-list {
+            background: rgba(0,0,0,0.2);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .member-group-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-mute);
+            font-weight: 700;
+        }
+
+        .member-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 0;
+            opacity: 0.8;
+            transition: 0.2s;
+        }
+        .member-item:hover { opacity: 1; }
+
+        .status-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            border: 2px solid #000;
+            position: absolute;
+            bottom: 0; right: 0;
+        }
+
+        /* Mobile Chat */
+        @media (max-width: 1024px) {
+            .social-container {
+                grid-template-columns: 80px 1fr;
+            }
+            .chat-sidebar { padding: 10px; }
+            .channel-label, .channel-name { display: none; }
+            .channel-btn { justify-content: center; padding: 10px; }
+            .members-list { display: none; }
+        }
+
         /* Firefox Scrollbar */
         * {
             scrollbar-width: thin;
@@ -829,16 +1543,18 @@
     </style>
 </head>
 <body>
+    <div class="aurora-gradient"></div>
     <div id="mouse-glow"></div>
     <canvas id="bg-canvas"></canvas>
     <div id="drop-zone"></div>
     <div id="hotkey-hud"><div id="hud-icon"></div><div id="hud-text"></div></div>
     <div id="toast-container" style="position: fixed; top: 30px; right: 30px; z-index: 5000; display: flex; flex-direction: column; gap: 10px;"></div>
     
+    
     <!-- Immersive Fullscreen Lyrics -->
     <div id="lyrics-overlay-fs">
         <div class="lyrics-bg-blur" id="lyrics-bg"></div>
-        <button id="close-lyrics-btn" style="position: fixed; top: 40px; right: 40px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 50%; padding: 15px; color: #fff; cursor: pointer; transition: all 0.3s var(--ease-ios); z-index: 2100;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+        <!-- Close button removed (Use Esc) -->
         
         <div class="lyrics-wrapper">
             <div class="lyrics-art-column">
@@ -848,12 +1564,37 @@
                         <svg width="100" height="100" viewBox="0 0 24 24" fill="rgba(255,255,255,0.05)"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
                     </div>
                 </div>
+                <div id="lyrics-artist-label" class="lyrics-artist-under-art" style="font-size: 24px; font-weight: 700; color: #fff; margin-top: 20px; opacity: 0.9;"></div>
                 
-                <!-- Controls Moved Under Art -->
-                <div class="lyrics-controls">
-                    <button class="control-btn" id="lyrics-prev-btn" style="opacity: 1;"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M19 20L9 12l10-8v16zM5 19V5h2v14H5z"/></svg></button>
-                    <button class="control-btn play-main" id="lyrics-play-btn" style="width: 56px; height: 56px; background: #fff; color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 1;"><svg id="lyrics-play-icon" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
-                    <button class="control-btn" id="lyrics-next-btn" style="opacity: 1;"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M5 4l10 8-10 8V4zm14 1h-2v14h2V5z"/></svg></button>
+                <!-- Unified Lyrics Controls -->
+                <div class="lyrics-unified-controls">
+                    <!-- Progress Bar (Top) -->
+                    <div class="progress-container" style="margin-bottom: 0;">
+                        <span id="lyrics-current-time" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim); min-width: 35px;">0:00</span>
+                        <div class="progress-track" id="lyrics-waveform-container" style="height: 6px; cursor: pointer; background: rgba(255,255,255,0.1);">
+                            <div class="progress-fill" id="lyrics-progress-fill" style="transition: none; background: #fff;"></div>
+                        </div>
+                        <span id="lyrics-duration-time" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim); min-width: 35px; text-align: right;">0:00</span>
+                    </div>
+
+                    <!-- Buttons & Volume (Bottom) -->
+                    <div class="lyrics-controls-row">
+                        <!-- Volume -->
+                        <div style="display:flex; align-items:center; gap:8px; justify-self: start;">
+                            <svg class="volume-icon" id="lyrics-vol-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                            <input type="range" id="lyrics-volume-range" class="volume-range" min="0" max="100" value="80" style="width:80px;">
+                        </div>
+
+                        <!-- Playback Buttons -->
+                        <div style="display:flex; align-items:center; gap:20px; justify-self: center;">
+                            <button class="control-btn" id="lyrics-prev-btn" style="opacity: 1;"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 20L9 12l10-8v16zM5 19V5h2v14H5z"/></svg></button>
+                            <button class="control-btn play-main" id="lyrics-play-btn" style="width: 48px; height: 48px; background: #fff; color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 1;"><svg id="lyrics-play-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+                            <button class="control-btn" id="lyrics-next-btn" style="opacity: 1;"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M5 4l10 8-10 8V4zm14 1h-2v14h2V5z"/></svg></button>
+                        </div>
+
+                        <!-- Spacer for centering -->
+                        <div style="width: 100px; display: none;"></div> 
+                    </div>
                 </div>
             </div>
             <div class="lyrics-scroll-column">
@@ -867,27 +1608,57 @@
     <!-- Sidebar -->
     <aside class="sidebar">
         <div class="logo-container">
-            <div class="logo-icon"></div>
-            <span class="logo-text">Cosmic</span>
+            <div class="logo-icon">
+                <svg class="logo-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="max-width: 100%; max-height: 100%;">
+                    <!-- Planet Body -->
+                    <circle cx="50" cy="50" r="30" fill="url(#planet_grad)" />
+                    <!-- Rings -->
+                    <ellipse cx="50" cy="50" rx="42" ry="12" stroke="url(#ring_grad)" stroke-width="6" transform="rotate(-25 50 50)" />
+                    <path d="M50 20 A 30 30 0 0 1 50 80" fill="url(#shadow_grad)" style="mix-blend-mode: overlay; opacity: 0.3;" />
+                    <defs>
+                        <linearGradient id="planet_grad" x1="20" y1="20" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="var(--accent-primary)"/>
+                            <stop offset="1" stop-color="#a855f7"/>
+                        </linearGradient>
+                        <linearGradient id="ring_grad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#fff"/>
+                            <stop offset="1" stop-color="var(--accent-glow)"/>
+                        </linearGradient>
+                        <linearGradient id="shadow_grad" x1="50" y1="20" x2="50" y2="80" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#000" stop-opacity="0"/>
+                            <stop offset="1" stop-color="#000"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+            <span class="logo-text">Cosmic Player</span>
         </div>
 
         <nav class="nav-group">
-            <div class="nav-label">Menu</div>
+            <div class="nav-label">Меню</div>
             <button class="nav-btn active" data-tab="music">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                Listen Now
+                Слушать
             </button>
             <button class="nav-btn" data-tab="lyrics">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
-                Lyric Studio
+                Студия Лирики
+            </button>
+            <button class="nav-btn" data-tab="settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01A1.65 1.65 0 0 0 9 4.09V4a2 2 0 1 1 4 0v.09c0 .68.39 1.29 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01A1.65 1.65 0 0 0 20.91 11H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                Настройки
             </button>
         </nav>
         
         <nav class="nav-group" style="margin-top: auto;">
-            <div class="nav-label">Library</div>
+            <div class="nav-label">Библиотека</div>
             <button class="nav-btn" id="add-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                Add Files
+                Добавить файлы
+            </button>
+            <button class="nav-btn" id="clear-library-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                Очистить библиотеку
             </button>
         </nav>
     </aside>
@@ -896,9 +1667,24 @@
     <main class="main-content">
         <div id="music-view" class="view active">
             <div class="header-bar">
-                <h1 class="view-title">Listen Now</h1>
-                <div style="display:flex; gap:15px;">
-                    <button class="control-btn" id="play-all-btn" style="padding: 12px 24px; background: #fff; color: #000; border-radius: 12px; font-weight: 700; opacity: 1;">Play All</button>
+                <h1 class="view-title">Слушать</h1>
+                <div style="display:flex; gap:15px; align-items: center;">
+                    <div style="position: relative;">
+                        <input type="text" id="library-search" placeholder="Фильтр библиотеки..." style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 12px 15px; padding-left: 35px; color: #fff; width: 220px; font-family: inherit; transition: width 0.3s;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); opacity: 0.5;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </div>
+                    <select id="library-sort" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 12px 15px; color: #fff; font-family: inherit;">
+                        <option value="addedAt">Добавлены</option>
+                        <option value="title">Название</option>
+                        <option value="artist">Артист</option>
+                        <option value="album">Альбом</option>
+                        <option value="duration">Длительность</option>
+                    </select>
+                    <select id="library-order" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 12px 15px; color: #fff; font-family: inherit;">
+                        <option value="asc">Возрастание</option>
+                        <option value="desc">Убывание</option>
+                    </select>
+                    <button class="control-btn" id="play-all-btn" style="padding: 12px 24px; background: #fff; color: #000; border-radius: 12px; font-weight: 700; opacity: 1;">Играть всё</button>
                 </div>
             </div>
             
@@ -907,48 +1693,145 @@
             </div>
         </div>
 
-        <div id="lyrics-view" class="view" style="display: none; height: 100%;">
-             <div class="lyric-studio-container" style="display: flex; gap: 30px; height: 100%;">
-                 <div class="ls-sidebar" id="lyrics-track-list" style="width: 320px; background: var(--glass-bg); border-radius: 20px; border: 1px solid var(--glass-border); padding: 20px; overflow-y: auto;"></div>
-                 <div class="ls-main" style="flex: 1; background: var(--glass-bg); border-radius: 20px; border: 1px solid var(--glass-border); padding: 30px; display: flex; flex-direction: column; gap: 20px;">
+        <div id="lyrics-view" class="view" style="display: none;">
+             <div class="lyric-studio-container">
+                 <div class="ls-sidebar">
+                    <div style="padding: 20px 20px 10px 20px; border-bottom: 1px solid var(--glass-border);">
+                        <h3 style="margin: 0; font-size: 14px; text-transform: uppercase; color: var(--text-mute); letter-spacing: 1px;">Треки</h3>
+                    </div>
+                    <div class="ls-track-list-container" id="lyrics-track-list"></div>
+                 </div>
+                 
+                 <div class="ls-main">
                      <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h2 id="editing-track-title" style="font-size: 28px; letter-spacing: -1px;">Select a track</h2>
-                        <div id="sync-status-badge" style="padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.05); color: var(--text-dim);">No Sync</div>
+                        <h2 id="editing-track-title" style="font-size: 24px; letter-spacing: -0.5px; margin: 0;">Выберите трек</h2>
+                        <div id="sync-status-badge" style="padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.05); color: var(--text-dim);">Нет синхронизации</div>
                      </div>
                      
-                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; flex: 1; min-height: 0;">
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <label style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-mute);">Raw Lyrics</label>
-                            <textarea id="lyrics-input" style="flex: 1; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 12px; color: #fff; padding: 20px; font-family: inherit; font-size: 16px; resize: none; line-height: 1.6;" placeholder="Paste lyrics here (one line per row)..."></textarea>
+                     <div class="ls-editor-grid">
+                        <div class="editor-column">
+                            <label style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-mute);">Текст песни</label>
+                            <textarea id="lyrics-input" class="glass-input" placeholder="Вставь текст (по строке на линию)..."></textarea>
+                            <button id="estimate-sync-btn" class="btn-glass" style="margin-top: auto;">Авто-оценка тайминга (линейно)</button>
                         </div>
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <label style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-mute);">Synced Preview</label>
-                            <div id="synced-preview" style="flex: 1; background: rgba(0,0,0,0.1); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
-                                <div style="margin: auto; color: var(--text-mute); font-size: 14px; text-align: center;">Sync lyrics to see preview</div>
+                        <div class="editor-column">
+                            <label style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-mute);">Предпросмотр синхронизации</label>
+                            <div id="synced-preview" class="glass-panel" style="display: flex; flex-direction: column; gap: 8px;">
+                                <div style="margin: auto; color: var(--text-mute); font-size: 14px; text-align: center;">Синхронизируйте лирику, чтобы увидеть предпросмотр</div>
                             </div>
                         </div>
                      </div>
 
-                     <div style="display: flex; gap: 15px; padding-top: 10px; border-top: 1px solid var(--glass-border);">
-                         <button id="auto-sync-btn" style="padding: 12px 24px; background: var(--accent-primary); border: none; border-radius: 12px; color: #fff; font-weight: 700; cursor: pointer; transition: 0.3s var(--ease-ios);">Auto Sync</button>
-                         <button id="manual-sync-btn" style="padding: 12px 24px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; color: #fff; font-weight: 700; cursor: pointer; transition: 0.3s var(--ease-ios);">Tap Sync (Space)</button>
-                         <button id="save-lyrics-btn" style="padding: 12px 24px; background: #fff; color: #000; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; margin-left: auto; transition: 0.3s var(--ease-ios);">Save Lyrics</button>
+                     <div style="display: flex; gap: 15px; padding-top: 20px; border-top: 1px solid var(--glass-border);">
+                         <button id="search-lyrics-btn" class="btn-glass btn-accent" style="flex: 1;">Поиск онлайн (LRCLIB)</button>
+                         <button id="auto-sync-btn" class="btn-glass" style="display: none;">Автосинхронизация</button>
+                         <button id="manual-sync-btn" class="btn-glass">Синк по тапам (Space)</button>
+                         <button id="export-lrc-btn" class="btn-glass">Экспорт LRC</button>
+                         <button id="import-lrc-btn" class="btn-glass">Импорт LRC</button>
+                         <button id="save-lyrics-btn" class="btn-glass" style="background: #fff; color: #000; border: none; margin-left: auto;">Сохранить лирику</button>
                      </div>
                  </div>
              </div>
+        </div>
+
+        <div id="social-view" class="view" style="display: none; height: 100%;"></div>
+
+        <div id="settings-view" class="view" style="display: none;">
+            <div style="padding: 60px 50px; display: flex; flex-direction: column; gap: 20px;">
+                <h1 class="view-title">Настройки</h1>
+                <div style="display:flex; gap:20px; align-items:center; flex-wrap: wrap;">
+                    <label style="display:flex; align-items:center; gap:10px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 10px 14px;">
+                        <input type="checkbox" id="toggle-lrclib">
+                        <span>Автопоиск лирики (LRCLIB)</span>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:10px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 10px 14px;">
+                        <input type="checkbox" id="toggle-visuals">
+                        <span>Анимации и визуальные эффекты</span>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:10px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 10px 14px;">
+                        <input type="checkbox" id="toggle-fonts">
+                        <span>Загружать шрифты Google</span>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:10px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 10px 14px;">
+                        <span>Тема</span>
+                        <select id="theme-select">
+                            <option value="deep">Deep Space (Default)</option>
+                            <option value="midnight">Midnight Blue</option>
+                            <option value="amoled">AMOLED Black</option>
+                            <option value="twilight">Twilight Purple</option>
+                        </select>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:10px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 10px 14px;">
+                        <span>Акцент</span>
+                        <select id="accent-select">
+                            <option value="#007AFF">Синий</option>
+                            <option value="#5856D6">Фиолетовый</option>
+                            <option value="#FF2D55">Малиновый</option>
+                            <option value="#10B981">Зелёный</option>
+                            <option value="#F59E0B">Оранжевый</option>
+                        </select>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:10px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 10px 14px;">
+                        <span>Шрифт UI</span>
+                        <select id="font-select">
+                            <option value="system">Системный</option>
+                            <option value="Outfit">Outfit</option>
+                            <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+                            <option value="JetBrains Mono">JetBrains Mono</option>
+                        </select>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:10px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 10px 14px;">
+                        <span>Масштаб UI</span>
+                        <input type="range" id="base-scale" min="0.9" max="1.4" step="0.01" value="1.2" style="width:160px;">
+                    </label>
+                </div>
+
+                <!-- Equalizer Section -->
+                <div style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 20px; padding: 25px;">
+                    <h3 style="margin-top: 0; font-size: 18px; margin-bottom: 20px;">Эквалайзер</h3>
+                    <div style="display: flex; justify-content: space-between; gap: 15px;">
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1;">
+                            <input type="range" class="eq-slider" data-band="0" min="-12" max="12" value="0" style="writing-mode: bt-lr; -webkit-appearance: slider-vertical; height: 150px; width: 24px;">
+                            <span style="font-size: 11px; color: var(--text-dim);">60Hz</span>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1;">
+                            <input type="range" class="eq-slider" data-band="1" min="-12" max="12" value="0" style="writing-mode: bt-lr; -webkit-appearance: slider-vertical; height: 150px; width: 24px;">
+                            <span style="font-size: 11px; color: var(--text-dim);">250Hz</span>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1;">
+                            <input type="range" class="eq-slider" data-band="2" min="-12" max="12" value="0" style="writing-mode: bt-lr; -webkit-appearance: slider-vertical; height: 150px; width: 24px;">
+                            <span style="font-size: 11px; color: var(--text-dim);">1kHz</span>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1;">
+                            <input type="range" class="eq-slider" data-band="3" min="-12" max="12" value="0" style="writing-mode: bt-lr; -webkit-appearance: slider-vertical; height: 150px; width: 24px;">
+                            <span style="font-size: 11px; color: var(--text-dim);">4kHz</span>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1;">
+                            <input type="range" class="eq-slider" data-band="4" min="-12" max="12" value="0" style="writing-mode: bt-lr; -webkit-appearance: slider-vertical; height: 150px; width: 24px;">
+                            <span style="font-size: 11px; color: var(--text-dim);">16kHz</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+                         <button class="btn-glass" onclick="setEQPreset('flat')">Flat</button>
+                         <button class="btn-glass" onclick="setEQPreset('bass')">Bass Boost</button>
+                         <button class="btn-glass" onclick="setEQPreset('vocal')">Vocal</button>
+                         <button class="btn-glass" onclick="setEQPreset('treble')">Treble</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Manual Sync Recording Overlay -->
         <div id="tap-sync-overlay" style="position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px;">
             <div id="tap-sync-bg" style="position: absolute; inset: 0; z-index: -1; opacity: 0.2; filter: blur(100px);"></div>
             <div style="margin-bottom: 60px;">
-                <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 4px; color: var(--accent-primary); margin-bottom: 10px;">Recording Mode</h3>
-                <p style="color: var(--text-dim); font-size: 18px;">Press <span style="color: #fff; font-weight: 800; background: rgba(255,255,255,0.1); padding: 4px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);">SPACE</span> when the line starts</p>
+                <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 4px; color: var(--accent-primary); margin-bottom: 10px;">Режим записи</h3>
+                <p style="color: var(--text-dim); font-size: 18px;">Нажимай <span style="color: #fff; font-weight: 800; background: rgba(255,255,255,0.1); padding: 4px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);">ПРОБЕЛ</span> в начале строки</p>
             </div>
 
             <div style="height: 120px; display: flex; flex-direction: column; justify-content: center; gap: 20px;">
                 <div id="tap-prev-line" style="font-size: 24px; color: var(--text-mute); opacity: 0.5; transition: all 0.3s;"></div>
-                <div id="tap-current-line" style="font-size: 48px; font-weight: 800; color: #fff; text-shadow: 0 0 30px var(--accent-glow); transition: all 0.3s;">Get Ready...</div>
+                <div id="tap-current-line" style="font-size: 48px; font-weight: 800; color: #fff; text-shadow: 0 0 30px var(--accent-glow); transition: all 0.3s;">Готовься...</div>
                 <div id="tap-next-line" style="font-size: 24px; color: var(--text-mute); opacity: 0.5; transition: all 0.3s;"></div>
             </div>
 
@@ -964,27 +1847,47 @@
             </div>
 
             <div style="position: absolute; bottom: 60px; display: flex; flex-direction: column; align-items: center; gap: 20px;">
-                <div id="tap-progress-text" style="font-size: 14px; font-weight: 700; color: var(--text-dim);">0 / 0 lines</div>
+                <div id="tap-progress-text" style="font-size: 14px; font-weight: 700; color: var(--text-dim);">0 / 0 строк</div>
                 <div style="display: flex; gap: 15px;">
                     <button id="pause-sync-btn" style="width: 50px; height: 50px; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); border-radius: 50%; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s var(--ease-ios);">
                         <svg id="pause-sync-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
                     </button>
-                    <button id="stop-sync-btn" style="padding: 12px 30px; background: rgba(255,45,85,0.2); border: 1px solid rgba(255,45,85,0.4); border-radius: 12px; color: #ff2d55; font-weight: 700; cursor: pointer; transition: 0.3s var(--ease-ios);">Cancel Recording</button>
+                    <!-- Close button removed (Use Esc) -->
                 </div>
             </div>
         </div>
     </main>
 
+    <!-- Custom Delete Modal -->
+    <div id="delete-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); z-index: 10000; align-items: center; justify-content: center;">
+        <div style="background: rgba(30, 30, 35, 0.9); border: 1px solid var(--glass-border); border-radius: 20px; padding: 24px; width: 320px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; flex-direction: column; align-items: center; text-align: center;">
+            <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(255, 68, 68, 0.1); color: #ff4444; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </div>
+            <h3 style="font-size: 18px; margin: 0 0 8px 0; color: #fff;">Удалить трек?</h3>
+            <p style="font-size: 14px; color: var(--text-mute); margin: 0 0 24px 0;">Это действие нельзя отменить.</p>
+            <div style="display: flex; gap: 12px; width: 100%;">
+                <button id="cancel-delete-btn" style="flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--glass-border); background: transparent; color: #fff; cursor: pointer; font-weight: 600;">Отмена</button>
+                <button id="confirm-delete-btn" style="flex: 1; padding: 12px; border-radius: 12px; border: none; background: #ff4444; color: #fff; cursor: pointer; font-weight: 600;">Удалить</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Floating Player Bar -->
     <footer class="player-bar">
         <div class="player-left">
-            <div class="player-cover-wrap">
-                <img id="music-cover" src="" style="display: none;">
-                <canvas id="fallback-cover" width="54" height="54"></canvas>
+            <div class="cover-stack">
+                <div class="player-cover-wrap">
+                    <img id="music-cover" src="" style="display: none;">
+                    <canvas id="fallback-cover" width="54" height="54"></canvas>
+                </div>
+                <div id="cover-artist" class="cover-artist">Выберите трек</div>
             </div>
-            <div class="track-titles">
-                <div id="track-title" class="track-name">Not Playing</div>
-                <div id="track-artist" class="track-artist">Select a song</div>
+            <div class="player-info-controls">
+                <div class="track-titles">
+                    <div id="track-title" class="track-name">Ничего не играет</div>
+                    <div id="track-artist" class="track-artist">Выберите трек</div>
+                </div>
             </div>
         </div>
 
@@ -1012,15 +1915,21 @@
         </div>
 
         <div class="player-right">
-            <div class="volume-group">
-                <svg class="volume-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
-                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07" class="vol-wave-1"></path>
-                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14" class="vol-wave-2"></path>
-                </svg>
-                <input type="range" id="volume-range" min="0" max="100" value="80">
+            <div style="display: flex; gap: 8px; margin-right: 15px;">
+                <button class="control-btn" id="karaoke-btn" title="Караоке (Vocal Remover)" style="width: 32px; height: 32px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                </button>
+                <button class="control-btn" id="mini-player-btn" title="Мини-плеер">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2" ry="2"></rect><rect x="10" y="10" width="10" height="10" rx="1" ry="1" fill="currentColor" fill-opacity="0.2"></rect></svg>
+                </button>
             </div>
-            <button class="control-btn" id="mini-player-btn" style="margin-left: 10px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M9 3v18"></path><path d="M15 9h-4v4h4V9z"></path></svg></button>
+            <div class="volume-group">
+                <svg class="volume-icon" id="main-vol-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>
+                <input type="range" id="main-volume-range" class="volume-range" min="0" max="100" value="80">
+            </div>
         </div>
     </footer>
 
@@ -1040,17 +1949,49 @@
             lastActiveLyricIndex: -1
         };
 
+        function loadSettings() {
+            let s = {};
+            try { s = JSON.parse(localStorage.getItem('cosmic_settings') || '{}'); } catch {}
+            if (typeof s.enableLRCLIB !== 'boolean') s.enableLRCLIB = true;
+            if (typeof s.enableVisuals !== 'boolean') s.enableVisuals = true;
+            if (typeof s.useGoogleFonts !== 'boolean') s.useGoogleFonts = true;
+            if (!s.accentColor) s.accentColor = '#007AFF';
+            if (!s.uiFont) s.uiFont = 'system';
+            if (!s.baseScale) s.baseScale = 1.2;
+            if (!s.theme) s.theme = 'deep';
+            if (!s.eqValues) s.eqValues = [0, 0, 0, 0, 0];
+            return s;
+        }
+        function saveSettings(s) {
+            localStorage.setItem('cosmic_settings', JSON.stringify(s));
+        }
+        const settings = loadSettings();
+        const gfl = document.getElementById('google-fonts-link');
+        if (!settings.useGoogleFonts && gfl) gfl.remove();
+        const tLR = document.getElementById('toggle-lrclib'); if (tLR) tLR.checked = !!settings.enableLRCLIB;
+        const tVis = document.getElementById('toggle-visuals'); if (tVis) tVis.checked = !!settings.enableVisuals;
+        const tFonts = document.getElementById('toggle-fonts'); if (tFonts) tFonts.checked = !!settings.useGoogleFonts;
+
+        // --- Animation Loop ---
         // --- Visuals Manager (Canvas & Parallax) ---
         class VisualsManager {
             constructor() {
                 this.canvas = document.getElementById('bg-canvas');
                 this.ctx = this.canvas.getContext('2d');
                 this.particles = [];
+                this.enabled = settings.enableVisuals;
                 this.resize();
                 this.initParticles();
                 this.animate();
                 this.initParallax();
                 window.addEventListener('resize', () => this.resize());
+            }
+
+            setEnabled(v) {
+                this.enabled = !!v;
+                const aurora = document.querySelector('.aurora-gradient');
+                if (aurora) aurora.style.opacity = this.enabled ? '1' : '0';
+                if (this.canvas) this.canvas.style.opacity = this.enabled ? '1' : '0';
             }
 
             resize() {
@@ -1075,22 +2016,24 @@
 
             animate() {
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-                this.particles.forEach(p => {
-                    p.x += p.vx;
-                    p.y += p.vy;
-                    if (p.x < -p.radius) p.x = this.canvas.width + p.radius;
-                    if (p.x > this.canvas.width + p.radius) p.x = -p.radius;
-                    if (p.y < -p.radius) p.y = this.canvas.height + p.radius;
-                    if (p.y > this.canvas.height + p.radius) p.y = -p.radius;
+                if (this.enabled) {
+                    this.particles.forEach(p => {
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        if (p.x < -p.radius) p.x = this.canvas.width + p.radius;
+                        if (p.x > this.canvas.width + p.radius) p.x = -p.radius;
+                        if (p.y < -p.radius) p.y = this.canvas.height + p.radius;
+                        if (p.y > this.canvas.height + p.radius) p.y = -p.radius;
 
-                    this.ctx.beginPath();
-                    const grad = this.ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
-                    grad.addColorStop(0, p.color);
-                    grad.addColorStop(1, 'transparent');
-                    this.ctx.fillStyle = grad;
-                    this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                    this.ctx.fill();
-                });
+                        this.ctx.beginPath();
+                        const grad = this.ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
+                        grad.addColorStop(0, p.color);
+                        grad.addColorStop(1, 'transparent');
+                        this.ctx.fillStyle = grad;
+                        this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    });
+                }
 
                 // High-Frequency UI Updates (60fps)
                 if (typeof engine !== 'undefined') {
@@ -1128,12 +2071,6 @@
                     if (sidebar) {
                         sidebar.style.transform = `translate(${moveX * 0.3}px, 0)`;
                     }
-
-                    // --- Song Icons Parallax ---
-                    // (Removed as requested)
-
-                    // --- Lyrics Large Art Parallax ---
-                    // (Removed as requested)
                 });
             }
         }
@@ -1147,6 +2084,7 @@
             playIcon: document.getElementById('play-icon'),
             trackTitle: document.getElementById('track-title'),
             trackArtist: document.getElementById('track-artist'),
+            coverArtist: document.getElementById('cover-artist'),
             musicCover: document.getElementById('music-cover'),
             fallbackCover: document.getElementById('fallback-cover'),
             waveformContainer: document.getElementById('waveform-container'),
@@ -1168,10 +2106,26 @@
             lyricsScrollContainer: document.getElementById('lyrics-scroll-container'),
             lyricsToggleBtn: document.getElementById('lyrics-toggle-btn'),
             miniPlayerBtn: document.getElementById('mini-player-btn'),
-            closeLyricsBtn: document.getElementById('close-lyrics-btn'),
+            lyricsCurrentTime: document.getElementById('lyrics-current-time'),
+            lyricsDurationTime: document.getElementById('lyrics-duration-time'),
+            lyricsProgressFill: document.getElementById('lyrics-progress-fill'),
+            lyricsWaveformContainer: document.getElementById('lyrics-waveform-container'),
             playAllBtn: document.getElementById('play-all-btn'),
             shuffleBtn: document.getElementById('shuffle-btn'),
-            volumeRange: document.getElementById('volume-range')
+            miniVolumeRange: document.getElementById('mini-volume-range'),
+            mainVolumeRange: document.getElementById('main-volume-range'),
+            exportLrcBtn: document.getElementById('export-lrc-btn'),
+            importLrcBtn: document.getElementById('import-lrc-btn'),
+            librarySort: document.getElementById('library-sort'),
+            libraryOrder: document.getElementById('library-order'),
+            clearLibraryBtn: document.getElementById('clear-library-btn'),
+            toggleLRCLIB: document.getElementById('toggle-lrclib'),
+            toggleVisuals: document.getElementById('toggle-visuals'),
+            toggleFonts: document.getElementById('toggle-fonts'),
+            googleFontsLink: document.getElementById('google-fonts-link'),
+            accentSelect: document.getElementById('accent-select'),
+            fontSelect: document.getElementById('font-select'),
+            baseScaleRange: document.getElementById('base-scale')
         };
 
         // Error Handling
@@ -1185,47 +2139,31 @@
         function initProgressBar() {
             if (!els.waveformContainer) return;
 
-            const handleSeek = (e) => {
-                const rect = els.waveformContainer.getBoundingClientRect();
+            const handleSeek = (e, container) => {
+                const rect = container.getBoundingClientRect();
                 const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
                 const percent = Math.max(0, Math.min(1, x / rect.width));
                 if (engine.audio.duration) {
                     engine.audio.currentTime = percent * engine.audio.duration;
-                    updateProgressUI(percent);
+                    // Update UI immediately for responsiveness
+                    engine.updateProgressUI();
+                    engine.updateLyricsUI();
                 }
             };
 
-            let isDragging = false;
+            const attachSeekListeners = (container) => {
+                let isDragging = false;
+                container.addEventListener('mousedown', (e) => { isDragging = true; handleSeek(e, container); });
+                window.addEventListener('mousemove', (e) => { if (isDragging) handleSeek(e, container); });
+                window.addEventListener('mouseup', () => { isDragging = false; });
+                
+                container.addEventListener('touchstart', (e) => { isDragging = true; handleSeek(e, container); }, {passive:false});
+                window.addEventListener('touchmove', (e) => { if (isDragging) { e.preventDefault(); handleSeek(e, container); } }, {passive:false});
+                window.addEventListener('touchend', () => { isDragging = false; });
+            };
 
-            els.waveformContainer.addEventListener('mousedown', (e) => {
-                isDragging = true;
-                handleSeek(e);
-            });
-
-            window.addEventListener('mousemove', (e) => {
-                if (isDragging) handleSeek(e);
-            });
-
-            window.addEventListener('mouseup', () => {
-                isDragging = false;
-            });
-
-            // Touch support
-            els.waveformContainer.addEventListener('touchstart', (e) => {
-                isDragging = true;
-                handleSeek(e);
-            }, { passive: false });
-
-            window.addEventListener('touchmove', (e) => {
-                if (isDragging) {
-                    e.preventDefault();
-                    handleSeek(e);
-                }
-            }, { passive: false });
-
-            window.addEventListener('touchend', () => {
-                isDragging = false;
-            });
+            attachSeekListeners(els.waveformContainer);
+            if (els.lyricsWaveformContainer) attachSeekListeners(els.lyricsWaveformContainer);
         }
 
         function updateProgressUI(percent) {
@@ -1243,6 +2181,175 @@
             else path = '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
             icon.innerHTML = path;
         }
+        
+        function setVolume(percent) {
+            const p = Math.max(0, Math.min(100, typeof percent === 'number' ? percent : parseInt(percent) || 0));
+            const vol = p / 100;
+            if (engine && engine.audio) engine.audio.volume = vol;
+            if (els.miniVolumeRange) els.miniVolumeRange.value = p;
+            const lVol = document.getElementById('lyrics-volume-range');
+            if (lVol) lVol.value = p;
+            if (els.mainVolumeRange) els.mainVolumeRange.value = p;
+            updateVolumeIcon(vol, 'mini-vol-icon');
+            const lIcon = document.getElementById('lyrics-vol-icon');
+            if (lIcon) updateVolumeIcon(vol, 'lyrics-vol-icon');
+            const mIcon = document.getElementById('main-vol-icon');
+            if (mIcon) updateVolumeIcon(vol, 'main-vol-icon');
+            const trackBg = `linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-primary) ${p}%, rgba(255,255,255,0.15) ${p}%, rgba(255,255,255,0.15) 100%)`;
+            if (els.mainVolumeRange) els.mainVolumeRange.style.background = trackBg;
+            if (lVol) lVol.style.background = trackBg;
+            // if (els.miniVolumeRange) els.miniVolumeRange.style.background = trackBg;
+        }
+
+        // --- Lyrics Fetcher (Enhanced LRCLIB + Smart Fallbacks) ---
+        class LyricsFetcher {
+            static async searchAndApply(track) {
+                if (!settings.enableLRCLIB) { showToast('Автопоиск лирики отключён'); return false; }
+                if (!track.title) return false;
+                
+                showToast(`Поиск лирики для "${track.title}"...`);
+                
+                // Advanced cleaning for better matching
+                const clean = (str) => (str || '').toLowerCase()
+                    .replace(/\(feat\..*?\)/g, '')
+                    .replace(/\[feat\..*?\]/g, '')
+                    .replace(/\(ft\..*?\)/g, '')
+                    .replace(/\[ft\..*?\]/g, '')
+                    .replace(/\(.*?remix.*?\)/gi, '')
+                    .replace(/\[.*?remix.*?\]/gi, '')
+                    .replace(/\(.*?prod\..*?\)/gi, '')
+                    .replace(/ - single/gi, '')
+                    .replace(/ - ep/gi, '')
+                    .replace(/\(.*?official.*?\)/gi, '')
+                    .replace(/ - .*?version/gi, '')
+                    .replace(/\(.*?lyrics.*?\)/gi, '')
+                    .replace(/\[.*?lyrics.*?\]/gi, '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+
+                const title = clean(track.title);
+                const artist = clean(track.artist);
+                
+                // Enhanced strategies for finding the BEST possible lyrics
+                const queries = [
+                    // 1. Exact track/artist + duration (Highest confidence)
+                    `https://lrclib.net/api/get?track_name=${encodeURIComponent(track.title)}&artist_name=${encodeURIComponent(track.artist)}&duration=${Math.round(track.duration || 0)}`,
+                    // 2. Exact track/artist (No duration)
+                    `https://lrclib.net/api/get?track_name=${encodeURIComponent(track.title)}&artist_name=${encodeURIComponent(track.artist)}`,
+                    // 3. Cleaned Title + Artist + Duration
+                    `https://lrclib.net/api/get?track_name=${encodeURIComponent(title)}&artist_name=${encodeURIComponent(artist)}&duration=${Math.round(track.duration || 0)}`,
+                    // 4. Cleaned Title + Artist
+                    `https://lrclib.net/api/get?track_name=${encodeURIComponent(title)}&artist_name=${encodeURIComponent(artist)}`,
+                    // 5. Search query with Cleaned Title + Artist
+                    `https://lrclib.net/api/search?q=${encodeURIComponent(title + ' ' + artist)}`,
+                    // 6. Search query with Raw Title + Artist
+                    `https://lrclib.net/api/search?q=${encodeURIComponent(track.title + ' ' + track.artist)}`,
+                    // 7. Last resort: just Title
+                    `https://lrclib.net/api/search?q=${encodeURIComponent(title)}`
+                ];
+
+                for (const url of queries) {
+                    try {
+                        const res = await fetch(url);
+                        if (!res.ok) continue;
+                        const data = await res.json();
+                        
+                        let best = null;
+                        if (Array.isArray(data)) {
+                            if (data.length > 0) {
+                                // 1. Try to find synced lyrics with close duration
+                                if (track.duration) {
+                                    best = data.find(i => i.syncedLyrics && Math.abs(i.duration - track.duration) < 5);
+                                }
+                                // 2. Try any synced lyrics that match artist
+                                if (!best) best = data.find(i => i.syncedLyrics && (clean(i.artistName) === artist || artist.includes(clean(i.artistName))));
+                                // 3. Try any synced lyrics
+                                if (!best) best = data.find(i => i.syncedLyrics);
+                                // 4. Try plain lyrics with close duration
+                                if (!best && track.duration) {
+                                    best = data.find(i => i.plainLyrics && Math.abs(i.duration - track.duration) < 5);
+                                }
+                                // 5. Take first result
+                                if (!best) best = data[0];
+                            }
+                        } else if (data.syncedLyrics || data.plainLyrics) {
+                            best = data;
+                        }
+
+                        if (best) {
+                            if (best.syncedLyrics) {
+                                track.lyrics = this.parseLRC(best.syncedLyrics);
+                                track.lyricsSource = 'synced';
+                            } else if (best.plainLyrics) {
+                                // Auto-sync plain lyrics using smart distribution
+                                track.lyrics = this.smartAutoSync(best.plainLyrics, track.duration);
+                                track.lyricsSource = 'auto-synced';
+                            }
+
+                            if (track.lyrics && track.lyrics.length > 0) {
+                                if (storage.isSupported) storage.updateMetadata(track);
+                                showToast(`Лирика найдена! (${best.trackName})`, 'success');
+                                engine.renderLyrics(track);
+                                renderMusicList();
+                                return true;
+                            }
+                        }
+                    } catch (e) { console.warn('Search strategy failed:', url, e); }
+                }
+                
+                showToast('Лирика онлайн не найдена. Добавь её вручную в Студии Лирики!', 'error');
+                return false;
+            }
+
+            static parseLRC(lrc) {
+                const lines = lrc.split('\n');
+                const result = [];
+                const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/;
+                
+                for (const line of lines) {
+                    const match = line.match(timeRegex);
+                    if (match) {
+                        const min = parseInt(match[1]);
+                        const sec = parseInt(match[2]);
+                        const msStr = match[3];
+                        const ms = parseFloat('0.' + msStr);
+                        const text = line.replace(timeRegex, '').trim();
+                        
+                        if (text) {
+                            result.push({
+                                time: min * 60 + sec + ms,
+                                text: text
+                            });
+                        }
+                    }
+                }
+                return result.sort((a, b) => a.time - b.time);
+            }
+
+            static smartAutoSync(text, duration) {
+                if (!text || !duration) return [];
+                const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                if (lines.length === 0) return [];
+
+                // Smart distribution based on character count and duration
+                const totalChars = lines.reduce((sum, l) => sum + l.length, 0);
+                // Use 95% of duration, start at 2%
+                const availableDuration = duration * 0.93;
+                const startOffset = duration * 0.02;
+                const timePerChar = availableDuration / totalChars;
+                
+                let currentTime = startOffset;
+                return lines.map(line => {
+                    const entry = { time: currentTime, text: line };
+                    // Minimum line time 1.5s, max 10s (unless very long)
+                    const lineDuration = Math.max(1.5, line.length * timePerChar);
+                    currentTime += lineDuration;
+                    return entry;
+                });
+            }
+        }
+
+        
 
         // --- UI Utilities ---
         function showHUD(text, iconSvg) {
@@ -1327,6 +2434,16 @@
                 
                 if (tab === 'lyrics') {
                     lyricStudio.renderTrackList();
+                    const view = document.getElementById('lyrics-view');
+                    if (view) view.scrollTop = 0;
+                }
+                if (tab === 'music') {
+                    const view = document.getElementById('music-view');
+                    if (view) view.scrollTop = 0;
+                }
+                if (tab === 'search') {
+                    const view = document.getElementById('search-view');
+                    if (view) view.scrollTop = 0;
                 }
             });
         });
@@ -1337,11 +2454,13 @@
                 state.lyricsOverlayOpen = !state.lyricsOverlayOpen;
                 if (state.lyricsOverlayOpen) {
                     els.lyricsOverlayFs.classList.add('active');
+                    document.body.classList.add('lyrics-open'); // Hide global player
                     els.lyricsToggleBtn.style.color = 'var(--accent)';
                     // Force scroll to current line
                     engine.updateLyricsUI();
                 } else {
                     els.lyricsOverlayFs.classList.remove('active');
+                    document.body.classList.remove('lyrics-open'); // Show global player
                     els.lyricsToggleBtn.style.color = '';
                 }
             });
@@ -1510,6 +2629,17 @@
                     state.musicList.push(metadata);
                     musicAdded = true;
                     successCount++;
+
+                    // --- Auto-Fetch Lyrics in Background ---
+                    // Don't await this, let it run in background to keep UI responsive
+                    LyricsFetcher.searchAndApply(metadata).then(found => {
+                        if (found) {
+                            console.log(`Auto-lyrics found for ${metadata.title}`);
+                            // Only toast if it's a single file add to avoid spam
+                            if (files.length === 1) showToast(`Lyrics auto-found for ${metadata.title}`, 'success');
+                        }
+                    });
+
                 } catch (err) { 
                     console.error("File processing error:", err);
                     failCount++;
@@ -1571,7 +2701,27 @@
             }
 
             initListeners() {
+                // Estimate Sync Button
+                const estBtn = document.getElementById('estimate-sync-btn');
+                if(estBtn) estBtn.addEventListener('click', () => this.estimateSync());
+
                 if(els.autoSyncBtn) els.autoSyncBtn.addEventListener('click', () => this.autoSync());
+                // New Search Button Listener
+                const searchBtn = document.getElementById('search-lyrics-btn');
+                if(searchBtn) searchBtn.addEventListener('click', async () => {
+                    const track = state.musicList[state.currentEditingTrackIndex];
+                    if(!track) return showToast('Сначала выбери трек', 'error');
+                    
+                    searchBtn.disabled = true;
+                    searchBtn.textContent = 'Searching...';
+                    
+                    await LyricsFetcher.searchAndApply(track);
+                    
+                    searchBtn.disabled = false;
+                    searchBtn.textContent = 'Search Lyrics Online';
+                    this.renderTrackList(); // Refresh badges
+                });
+
                 if(els.manualSyncBtn) els.manualSyncBtn.addEventListener('click', () => this.startManualSync());
                 if(els.saveLyricsBtn) els.saveLyricsBtn.addEventListener('click', () => this.saveLyrics());
                 
@@ -1626,11 +2776,11 @@
                 if (this.isPaused) {
                     engine.audio.pause();
                     if (icon) icon.innerHTML = '<path d="M8 5v14l11-7z"></path>';
-                    showHUD('Sync Paused');
+                    showHUD('Пауза синхронизации');
                 } else {
                     engine.audio.play();
                     if (icon) icon.innerHTML = '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>';
-                    showHUD('Sync Resumed');
+                    showHUD('Продолжение синхронизации');
                 }
                 
                 const curr = document.getElementById('tap-current-line');
@@ -1688,9 +2838,9 @@
             }
 
             async startManualSync() {
-                if (state.currentEditingTrackIndex === -1) return showToast('Select a track first!', 'error');
+                if (state.currentEditingTrackIndex === -1) return showToast('Сначала выбери трек!', 'error');
                 const text = els.lyricsInput.value.trim();
-                if (!text) return showToast('Enter lyrics first!', 'error');
+                if (!text) return showToast('Сначала введи текст лирики!', 'error');
                 
                 this.manualLines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
                 if (this.manualLines.length === 0) return;
@@ -1749,9 +2899,9 @@
                 const fill = document.getElementById('tap-progress-fill');
 
                 if(prev) prev.textContent = this.manualIndex > 0 ? this.manualLines[this.manualIndex - 1] : '';
-                if(curr) curr.textContent = this.manualIndex < this.manualLines.length ? this.manualLines[this.manualIndex] : 'All Done!';
+                if(curr) curr.textContent = this.manualIndex < this.manualLines.length ? this.manualLines[this.manualIndex] : 'Готово!';
                 if(next) next.textContent = this.manualIndex + 1 < this.manualLines.length ? this.manualLines[this.manualIndex + 1] : '';
-                if(prog) prog.textContent = `${this.manualIndex} / ${this.manualLines.length} lines`;
+                if(prog) prog.textContent = `${this.manualIndex} / ${this.manualLines.length} строк`;
                 
                 if (curTimeEl) curTimeEl.textContent = engine.formatTime(engine.audio.currentTime);
                 if (durTimeEl) durTimeEl.textContent = engine.formatTime(engine.audio.duration || 0);
@@ -1769,21 +2919,37 @@
                 if(!cancelled) {
                     this.renderSyncPreview();
                     this.saveLyrics();
-                    showToast('Sync Complete!');
+                    showToast('Синхронизация завершена!');
                 } else {
-                    showToast('Recording cancelled');
+                    showToast('Запись отменена');
                 }
                 engine.audio.pause();
             }
 
-            async autoSync() {
-                if (state.currentEditingTrackIndex === -1) return showToast('Select a track first!', 'error');
+            estimateSync() {
+                if (state.currentEditingTrackIndex === -1) return showToast('Сначала выбери трек!', 'error');
                 const text = els.lyricsInput.value.trim();
-                if (!text) return showToast('Enter lyrics first!', 'error');
+                if (!text) return showToast('Сначала введи текст лирики!', 'error');
+                
+                const track = state.musicList[state.currentEditingTrackIndex];
+                const duration = track.duration || engine.audio.duration;
+                if (!duration) return showToast('Track duration unknown. Play it first.', 'error');
+                
+                state.syncedLyrics = LyricsFetcher.smartAutoSync(text, duration);
+                
+                this.renderSyncPreview();
+                this.saveLyrics();
+                showToast('Smart Auto-Sync Applied!', 'success');
+            }
+
+            async autoSync() {
+                if (state.currentEditingTrackIndex === -1) return showToast('Сначала выбери трек!', 'error');
+                const text = els.lyricsInput.value.trim();
+                if (!text) return showToast('Сначала введи текст лирики!', 'error');
                 const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
                 
                 els.autoSyncBtn.disabled = true;
-                els.autoSyncBtn.textContent = 'Analysing...';
+                els.autoSyncBtn.textContent = 'Анализ...';
                 
                 try {
                     const track = state.musicList[state.currentEditingTrackIndex];
@@ -1802,13 +2968,13 @@
                     
                     this.renderSyncPreview();
                     this.saveLyrics();
-                    showToast('Auto Sync Applied');
+                    showToast('Автосинхронизация применена');
                 } catch (err) {
                     console.error(err);
                     showToast('Analysis failed', 'error');
                 } finally {
                     els.autoSyncBtn.disabled = false;
-                    els.autoSyncBtn.textContent = 'Auto Sync';
+                    els.autoSyncBtn.textContent = 'Автосинхронизация';
                 }
             }
 
@@ -1817,7 +2983,7 @@
                 if(!preview) return;
                 
                 if (state.syncedLyrics.length === 0) {
-                    preview.innerHTML = '<div style="margin: auto; color: var(--text-mute); font-size: 14px; text-align: center;">Sync lyrics to see preview</div>';
+                    preview.innerHTML = '<div style="margin: auto; color: var(--text-mute); font-size: 14px; text-align: center;">Синхронизируй лирику, чтобы увидеть предпросмотр</div>';
                     return;
                 }
                 
@@ -1853,12 +3019,154 @@
         class AudioEngine {
             constructor() {
                 this.audio = new Audio();
-                this.audio.addEventListener('timeupdate', () => this.updateProgressUI());
-                this.audio.addEventListener('ended', () => this.next());
+                this.audio.crossOrigin = "anonymous"; // Important for canvas visualizer if using remote
+                this.rafId = null;
+
+                this.audio.addEventListener('play', () => this.startLoop());
+                this.audio.addEventListener('pause', () => this.stopLoop());
+                this.audio.addEventListener('ended', () => {
+                     this.stopLoop();
+                     this.next();
+                });
+                
+                // Keep timeupdate for less frequent updates if needed (e.g. when paused and dragging slider)
+                this.audio.addEventListener('timeupdate', () => {
+                    if (!state.isPlaying) {
+                        this.updateProgressUI();
+                        this.updateLyricsUI();
+                    }
+                });
+
                 this.audio.volume = 0.8;
+                
+                // Audio Context for Visualizer & Effects
+                this.audioCtx = null;
+                this.source = null;
+                this.filters = [];
+                this.dryGain = null;
+                this.karaokeGain = null;
+                this.karaokeEnabled = false;
+            }
+            
+            startLoop() {
+                if (this.rafId) cancelAnimationFrame(this.rafId);
+                const loop = () => {
+                    this.updateProgressUI();
+                    this.updateLyricsUI();
+                    if (!this.audio.paused) {
+                        this.rafId = requestAnimationFrame(loop);
+                    }
+                };
+                this.rafId = requestAnimationFrame(loop);
+            }
+            
+            stopLoop() {
+                if (this.rafId) cancelAnimationFrame(this.rafId);
+            }
+
+            initAudioContext() {
+                if (this.audioCtx) return;
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                this.audioCtx = new AudioContext();
+                
+                // Create Analyser
+                state.analyser = this.audioCtx.createAnalyser();
+                state.analyser.fftSize = 256;
+                state.dataArray = new Uint8Array(state.analyser.frequencyBinCount);
+                
+                // Source
+                this.source = this.audioCtx.createMediaElementSource(this.audio);
+                
+                // EQ Filters (60, 250, 1k, 4k, 16k)
+                const frequencies = [60, 250, 1000, 4000, 16000];
+                this.filters = frequencies.map(f => {
+                    const filter = this.audioCtx.createBiquadFilter();
+                    filter.type = 'peaking';
+                    filter.frequency.value = f;
+                    filter.Q.value = 1;
+                    filter.gain.value = 0;
+                    return filter;
+                });
+
+                // Connect Source -> Filter 1 -> ... -> Filter 5
+                this.source.connect(this.filters[0]);
+                for(let i=0; i<this.filters.length-1; i++) {
+                    this.filters[i].connect(this.filters[i+1]);
+                }
+                const eqOutput = this.filters[this.filters.length-1];
+
+                // Karaoke Routing
+                this.dryGain = this.audioCtx.createGain();
+                this.karaokeGain = this.audioCtx.createGain();
+                this.karaokeGain.gain.value = 0; // Disabled by default
+
+                // Dry Path (Normal Stereo)
+                eqOutput.connect(this.dryGain);
+                this.dryGain.connect(state.analyser);
+
+                // Karaoke Path (Vocal Remover: L - R)
+                // We split channels, invert Right, mix with Left to cancel center
+                const splitter = this.audioCtx.createChannelSplitter(2);
+                const inverter = this.audioCtx.createGain();
+                inverter.gain.value = -1;
+                const merger = this.audioCtx.createChannelMerger(2);
+
+                eqOutput.connect(splitter);
+                
+                // L -> Merger L & R
+                splitter.connect(merger, 0, 0);
+                splitter.connect(merger, 0, 1);
+                
+                // R -> Inverter -> Merger L & R
+                splitter.connect(inverter, 1);
+                inverter.connect(merger, 0, 0);
+                inverter.connect(merger, 0, 1);
+
+                merger.connect(this.karaokeGain);
+                this.karaokeGain.connect(state.analyser);
+
+                // Output
+                state.analyser.connect(this.audioCtx.destination);
+            }
+
+            toggleKaraoke() {
+                if (!this.audioCtx) this.initAudioContext();
+                this.karaokeEnabled = !this.karaokeEnabled;
+                
+                const now = this.audioCtx.currentTime;
+                if (this.karaokeEnabled) {
+                    this.dryGain.gain.setValueAtTime(1, now);
+                    this.dryGain.gain.linearRampToValueAtTime(0, now + 0.1);
+                    
+                    this.karaokeGain.gain.setValueAtTime(0, now);
+                    this.karaokeGain.gain.linearRampToValueAtTime(1, now + 0.1);
+                    
+                    showHUD('Караоке ВКЛ', '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>');
+                    document.getElementById('karaoke-btn').style.color = 'var(--accent-primary)';
+                } else {
+                    this.dryGain.gain.setValueAtTime(0, now);
+                    this.dryGain.gain.linearRampToValueAtTime(1, now + 0.1);
+                    
+                    this.karaokeGain.gain.setValueAtTime(1, now);
+                    this.karaokeGain.gain.linearRampToValueAtTime(0, now + 0.1);
+                    
+                    showHUD('Караоке ВЫКЛ');
+                    document.getElementById('karaoke-btn').style.color = '#fff';
+                }
+                return this.karaokeEnabled;
+            }
+
+            setEQ(gains) {
+                if (!this.audioCtx) this.initAudioContext();
+                gains.forEach((g, i) => {
+                    if (this.filters[i]) this.filters[i].gain.value = g;
+                });
             }
 
             async play(index) {
+                if (!this.audioCtx) this.initAudioContext();
+                if (this.audioCtx && this.audioCtx.state === 'suspended') this.audioCtx.resume();
+
                 if (index < 0 || index >= state.musicList.length) return;
                 const track = state.musicList[index];
                 
@@ -1904,9 +3212,18 @@
                     }
                 } catch (err) {
                     console.error('Play failed', err);
-                    showToast('Failed to play track', 'error');
+                    if (err.message === "File not found") {
+                        showToast('File not found. Please re-add this track.', 'error');
+                        // Optional: mark visually
+                        const card = document.querySelectorAll('.track-card')[index];
+                        if (card) card.style.opacity = '0.5';
+                    } else {
+                        showToast('Failed to play track', 'error');
+                    }
                 }
             }
+
+            
 
             toggle() {
                 if (!this.audio.src && state.musicList.length > 0) return this.play(0);
@@ -1945,27 +3262,54 @@
                 const percent = this.audio.currentTime / this.audio.duration;
                 if (!isNaN(percent)) {
                     if (els.progressFill) els.progressFill.style.width = `${percent * 100}%`;
+                    if (els.lyricsProgressFill) els.lyricsProgressFill.style.width = `${percent * 100}%`;
                 }
-                if(els.currentTime) els.currentTime.textContent = this.formatTime(this.audio.currentTime);
-                if(els.durationTime) els.durationTime.textContent = this.formatTime(this.audio.duration || 0);
-                // engine.updateLyricsUI(); // Moved to requestAnimationFrame for 60fps smoothness
+                
+                const currStr = this.formatTime(this.audio.currentTime);
+                const durStr = this.formatTime(this.audio.duration || 0);
+
+                if(els.currentTime) els.currentTime.textContent = currStr;
+                if(els.durationTime) els.durationTime.textContent = durStr;
+                
+                if(els.lyricsCurrentTime) els.lyricsCurrentTime.textContent = currStr;
+                if(els.lyricsDurationTime) els.lyricsDurationTime.textContent = durStr;
             }
 
             renderLyrics(track) {
+                let container = els.lyricsScrollContainer;
+                if (!container) {
+                    container = document.getElementById('lyrics-scroll-container');
+                    if (!container) {
+                        // Fallback to class if ID missing
+                        container = document.querySelector('.lyrics-scroll-column');
+                    }
+                }
+                
+                if (!container) return;
+                state.lastActiveLyricIndex = -1;
+                this.lyricsLines = [];
+
                 if (!track.lyrics || track.lyrics.length === 0) {
-                    els.lyricsScrollContainer.innerHTML = '<div style="text-align: center; color: var(--text-secondary); margin-top: 100px;">No lyrics available</div>';
+                    container.innerHTML = `
+                        <div style="text-align: center; color: var(--text-mute); margin-top: 100px;">
+                            <p style="font-size: 18px; margin-bottom: 10px;">Текст песни не найден</p>
+                            <button class="btn-glass" onclick="state.currentTab='lyrics'; lyricStudio.selectTrack(${state.currentTrackIndex}); document.querySelector('[data-tab=\'lyrics\']').click();" style="font-size: 12px; padding: 8px 16px;">
+                                Найти вручную в Lyric Studio
+                            </button>
+                        </div>`;
                     return;
                 }
-                els.lyricsScrollContainer.innerHTML = track.lyrics.map((l, i) => {
+                container.innerHTML = track.lyrics.map((l, i) => {
                     const words = l.text.split(' ').map((word, wi) => 
                         `<span class="lyric-word" id="word-${i}-${wi}">${word}</span>`
                     ).join(' ');
                     return `<div class="fs-lyric-line" id="fs-line-${i}" onclick="engine.seekToLine(${i})">${words}</div>`;
                 }).join('');
+                
+                this.lyricsLines = Array.from(container.querySelectorAll('.fs-lyric-line'));
             }
 
             updateLyricsUI() {
-                if (!state.lyricsOverlayOpen) return;
                 const track = state.musicList[state.currentTrackIndex];
                 if (!track || !track.lyrics) return;
                 
@@ -1979,6 +3323,14 @@
                     else break;
                 }
                 
+                // Ensure last line is active if song is ending (within last 2s)
+                if (activeIndex === -1 && track.lyrics.length > 0 && this.audio.duration && this.audio.currentTime > this.audio.duration - 2) {
+                    activeIndex = track.lyrics.length - 1;
+                } else if (activeIndex < track.lyrics.length - 1 && this.audio.duration && this.audio.currentTime > this.audio.duration - 1) {
+                     // Force last line if extremely close to end
+                     activeIndex = track.lyrics.length - 1;
+                }
+
                 const lines = document.querySelectorAll('.fs-lyric-line');
                 lines.forEach((l, i) => {
                     if (i === activeIndex) {
@@ -2003,7 +3355,9 @@
                         });
 
                         if (activeIndex !== state.lastActiveLyricIndex) {
-                            l.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            if (state.lyricsOverlayOpen) {
+                                l.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
                             state.lastActiveLyricIndex = activeIndex;
                         }
                     } else {
@@ -2023,6 +3377,7 @@
             updateMetadataUI(track) {
                 els.trackTitle.textContent = track.title;
                 els.trackArtist.textContent = track.artist;
+                if (els.coverArtist) els.coverArtist.textContent = track.artist || '';
                 
                 const coverSrc = track.cover || '';
                 
@@ -2057,6 +3412,8 @@
                         lyricsBg.style.backgroundImage = `url('${coverSrc}')`;
                         lyricsBg.style.opacity = '0.6';
                     }
+                    const lArtistLabel = document.getElementById('lyrics-artist-label');
+                    if (lArtistLabel) lArtistLabel.textContent = track.artist || '';
                 } else {
                     if(lyricsArt) lyricsArt.style.display = 'none';
                     if(lyricsFallback) lyricsFallback.style.display = 'flex';
@@ -2064,7 +3421,59 @@
                         lyricsBg.style.backgroundImage = 'none';
                         lyricsBg.style.backgroundColor = '#111';
                     }
+                    const lArtistLabel = document.getElementById('lyrics-artist-label');
+                    if (lArtistLabel) lArtistLabel.textContent = track.artist || '';
                 }
+            }
+        
+            initParallaxArt() {
+                const container = document.querySelector('.parallax-container');
+                const img = document.getElementById('lyrics-art');
+                const fallback = document.getElementById('lyrics-art-fallback');
+                const getEl = () => (img && img.style.display !== 'none' ? img : fallback);
+                
+                // Mouse Move Parallax Only (No Scroll)
+                const update = (tx = 0, ty = 0) => {
+                    const el = getEl();
+                    if (!el) return;
+                    el.style.transform = `rotateX(${tx}deg) rotateY(${ty}deg) scale(1.02)`;
+                };
+
+                if (container) {
+                    container.addEventListener('mousemove', (e) => {
+                        const rect = container.getBoundingClientRect();
+                        const x = e.clientX - rect.left - rect.width / 2;
+                        const y = e.clientY - rect.top - rect.height / 2;
+                        const maxTilt = 6;
+                        const ty = Math.max(-maxTilt, Math.min(maxTilt, (x / rect.width) * maxTilt * 2));
+                        const tx = Math.max(-maxTilt, Math.min(maxTilt, (-y / rect.height) * maxTilt * 2));
+                        update(tx, ty);
+                    });
+                    container.addEventListener('mouseleave', () => update(0, 0));
+                }
+            }
+
+            initMiniParallax() {
+                const container = document.querySelector('.player-cover-wrap');
+                const img = document.getElementById('music-cover');
+                const canvas = document.getElementById('fallback-cover');
+                const getEl = () => (img && img.style.display !== 'none' ? img : canvas);
+                if (!container) return;
+                const update = (tx = 0, ty = 0) => {
+                    const el = getEl();
+                    if (!el) return;
+                    el.style.transform = `rotateX(${tx}deg) rotateY(${ty}deg) scale(1.02)`;
+                };
+                container.addEventListener('mousemove', (e) => {
+                    const rect = container.getBoundingClientRect();
+                    const x = e.clientX - rect.left - rect.width / 2;
+                    const y = e.clientY - rect.top - rect.height / 2;
+                    const maxTilt = 6;
+                    const ty = Math.max(-maxTilt, Math.min(maxTilt, (x / rect.width) * maxTilt * 2));
+                    const tx = Math.max(-maxTilt, Math.min(maxTilt, (-y / rect.height) * maxTilt * 2));
+                    update(tx, ty);
+                });
+                container.addEventListener('mouseleave', () => update(0, 0));
             }
 
             updatePlayBtn() {
@@ -2108,83 +3517,214 @@
 
         // --- UI Logic ---
 
+
+        // --- Custom Delete Modal Logic ---
+        let deleteCallback = null;
+        const deleteModal = document.getElementById('delete-modal-overlay');
+        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+        const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+
+        function showDeleteModal(onConfirm) {
+            deleteCallback = onConfirm;
+            deleteModal.style.display = 'flex';
+            setTimeout(() => {
+                deleteModal.querySelector('div').style.transform = 'scale(1)';
+            }, 10);
+        }
+
+        function hideDeleteModal() {
+            deleteModal.querySelector('div').style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                deleteModal.style.display = 'none';
+                deleteCallback = null;
+            }, 200);
+        }
+
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.addEventListener('click', () => {
+                if (deleteCallback) deleteCallback();
+                hideDeleteModal();
+            });
+        }
+        if (cancelDeleteBtn) {
+            cancelDeleteBtn.addEventListener('click', () => {
+                hideDeleteModal();
+            });
+        }
+        // Close on backdrop click
+        if (deleteModal) {
+            deleteModal.addEventListener('click', (e) => {
+                if (e.target === deleteModal) hideDeleteModal();
+            });
+        }
+
         async function deleteMedia(id, type) {
-            if(!confirm('Delete this item?')) return;
-             
-             const track = state.musicList.find(m => m.id === id);
-             if (track && track.opfsName) {
-                 try {
-                     const root = await navigator.storage.getDirectory();
-                     await root.removeEntry(track.opfsName);
-                 } catch (e) { console.warn("Failed to delete file from OPFS:", e); }
-             }
-             
-             sessionStore.files.delete(id);
-             state.musicList = state.musicList.filter(m => m.id !== id);
-             
-             if (storage.isSupported && storage.db) {
-                 const tx = storage.db.transaction('media', 'readwrite');
-                 tx.objectStore('media').delete(id);
-             }
-             
-             renderMusicList();
-             if (state.currentTab === 'lyrics') lyricStudio.renderTrackList();
-             showHUD("Deleted track");
+            showDeleteModal(async () => {
+                 const trackIndex = state.musicList.findIndex(m => m.id === id);
+                 const track = state.musicList[trackIndex];
+                 
+                 if (track && track.opfsName) {
+                     try {
+                         const root = await navigator.storage.getDirectory();
+                         await root.removeEntry(track.opfsName);
+                     } catch (e) { console.warn("Failed to delete file from OPFS:", e); }
+                 }
+                 
+                 sessionStore.files.delete(id);
+                 
+                 // Remove from array
+                 state.musicList.splice(trackIndex, 1);
+                 
+                 if (storage.isSupported && storage.db) {
+                     const tx = storage.db.transaction('media', 'readwrite');
+                     tx.objectStore('media').delete(id);
+                 }
+                 
+                 // Optimistic UI update: Remove element directly instead of re-rendering full list
+                 // This prevents "reload" feel and scroll reset
+                 // Find the card. Since we have filtered lists, we need to be careful.
+                 // But typically renderMusicList maps originalIndex.
+                 // It's safer to find the element by some attribute, but we don't have IDs on cards.
+                 // However, we can re-render if we really want, but let's try to just remove the node if found.
+                 
+                 // If we re-render, we MUST save scroll position.
+                 const scrollPos = els.musicList.scrollTop;
+                 renderMusicList();
+                 els.musicList.scrollTop = scrollPos;
+                 
+                 if (state.currentTab === 'lyrics') lyricStudio.renderTrackList();
+                 showHUD("Deleted track");
+            });
         }
 
         function renderMusicList() {
             if(!els.musicList) return;
-            if (state.musicList.length === 0) {
-                els.musicList.innerHTML = `
-                    <div style="padding: 100px; text-align: center; opacity: 0.3;">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin-bottom: 20px;"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
-                        <p style="font-size: 18px; font-weight: 500;">Your library is empty. Add some tracks!</p>
-                    </div>`;
+            
+            // Filter Logic
+            const filterText = (document.getElementById('library-search')?.value || '').toLowerCase();
+            const displayList = state.musicList.map((m, originalIndex) => ({...m, originalIndex})).filter(m => {
+                if (!filterText) return true;
+                return m.title.toLowerCase().includes(filterText) || m.artist.toLowerCase().includes(filterText) || (m.album && m.album.toLowerCase().includes(filterText));
+            });
+            
+            const sortField = els.librarySort?.value || 'addedAt';
+            const order = els.libraryOrder?.value || 'desc';
+            displayList.sort((a, b) => {
+                let av = a[sortField], bv = b[sortField];
+                if (sortField === 'title' || sortField === 'artist' || sortField === 'album') {
+                    av = (av || '').toString();
+                    bv = (bv || '').toString();
+                    const r = av.localeCompare(bv, 'ru', { sensitivity: 'base' });
+                    return order === 'asc' ? r : -r;
+                } else {
+                    av = av ?? 0;
+                    bv = bv ?? 0;
+                    const r = av < bv ? -1 : av > bv ? 1 : 0;
+                    return order === 'asc' ? r : -r;
+                }
+            });
+
+            if (displayList.length === 0) {
+                if (state.musicList.length === 0) {
+                    els.musicList.innerHTML = `
+                        <div style="padding: 100px; text-align: center; opacity: 0.3;">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin-bottom: 20px;"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                            <p style="font-size: 18px; font-weight: 500;">Твоя медиатека пуста. Добавь музыку!</p>
+                        </div>`;
+                } else {
+                    els.musicList.innerHTML = `
+                        <div style="padding: 100px; text-align: center; opacity: 0.3;">
+                            <p style="font-size: 18px; font-weight: 500;">Ничего не найдено.</p>
+                        </div>`;
+                }
                 return;
             }
-            els.musicList.innerHTML = state.musicList.map((m, i) => {
-                const isActive = state.currentTrackIndex === i;
+
+            els.musicList.innerHTML = displayList.map((m, i) => {
+                // Use originalIndex to ensure clicking plays the correct track from main list
+                const idx = m.originalIndex;
+                const isActive = state.currentTrackIndex === idx;
                 const isPlaying = isActive && state.isPlaying;
                 
+                // Check if file is likely missing (for session-only files after reload)
+                const isMissing = m.isSessionOnly && !sessionStore.files.has(m.id);
+                
                 return `
-                <div class="track-card ${isActive ? 'active' : ''}" onclick="playMusic(${i})" style="animation-delay: ${i * 0.05}s">
+                <div class="track-card ${isActive ? 'active' : ''}" onclick="${isMissing ? '' : `playMusic(${idx}, event)`}" style="animation-delay: ${i * 0.05}s; ${isMissing ? 'opacity: 0.5; cursor: not-allowed;' : ''}">
                     <div class="track-index">
-                        ${isPlaying ? `
+                        ${isMissing ? '<span style="color: #ff4444; font-size: 18px;">!</span>' : (isPlaying ? `
                             <div class="playing-indicator">
                                 <div class="playing-bar" style="animation-delay: -0.2s"></div>
                                 <div class="playing-bar" style="animation-delay: -0.4s"></div>
                                 <div class="playing-bar" style="animation-delay: -0.1s"></div>
                             </div>
-                        ` : (i + 1)}
+                        ` : (i + 1))}
                     </div>
                     <div class="track-info-main">
-                        <div class="track-cover-container">
-                            ${m.cover ? `<img src="${m.cover}" class="track-cover-img">` : `
-                                <div class="track-cover-img" style="background: linear-gradient(135deg, #1c1c1e, #020205); display:flex; align-items:center; justify-content:center;">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(255,255,255,0.1)"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
-                                </div>
-                            `}
+                        <div class="track-cover-stack">
+                            <div class="track-cover-container">
+                                ${m.cover ? `<img src="${m.cover}" class="track-cover-img">` : `
+                                    <div class="track-cover-img" style="background: linear-gradient(135deg, #1c1c1e, #020205); display:flex; align-items:center; justify-content:center;">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(255,255,255,0.1)"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                                    </div>
+                                `}
+                            </div>
                         </div>
                         <div class="track-titles">
-                            <span class="track-name">${m.title}</span>
-                            <span class="track-artist">${m.artist}</span>
+                            <span class="track-name" style="${isMissing ? 'color: #ff4444;' : ''}">${m.title} ${isMissing ? '(Файл потерян)' : ''}</span>
                         </div>
                     </div>
                     <div class="track-album" style="color: var(--text-mute); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${m.album || ''}</div>
                     <div class="track-duration">${m.duration ? engine.formatTime(m.duration) : '--:--'}</div>
                     <div class="track-actions" style="display: flex; justify-content: flex-end;">
-                        <button class="control-btn" onclick="event.stopPropagation(); deleteMedia(${m.id}, 'music')" style="opacity: 0.4;">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        <button class="control-btn" onclick="event.stopPropagation(); deleteMedia(${m.id}, 'music')" style="opacity: 1; color: ${isMissing ? '#ff4444' : '#fff'};">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         </button>
                     </div>
                 </div>
             `}).join('');
+            
+            enableTrackCoverParallax();
+        }
+        
+        function enableTrackCoverParallax() {
+            const covers = document.querySelectorAll('.track-cover-container');
+            covers.forEach(c => {
+                const img = c.querySelector('.track-cover-img');
+                const target = img || c;
+                let rafId = null;
+                const onMove = (e) => {
+                    const rect = c.getBoundingClientRect();
+                    const x = (e.clientX - rect.left) / rect.width - 0.5;
+                    const y = (e.clientY - rect.top) / rect.height - 0.5;
+                    const tx = x * 6;
+                    const ty = y * 6;
+                    if (rafId) cancelAnimationFrame(rafId);
+                    rafId = requestAnimationFrame(() => {
+                        target.style.setProperty('--tx', `${tx}px`);
+                        target.style.setProperty('--ty', `${ty}px`);
+                    });
+                };
+                const onLeave = () => {
+                    if (rafId) cancelAnimationFrame(rafId);
+                    target.style.removeProperty('--tx');
+                    target.style.removeProperty('--ty');
+                };
+                c.onmousemove = onMove;
+                c.onmouseleave = onLeave;
+            });
         }
 
         // --- Init ---
         const engine = new AudioEngine();
         const lyricStudio = new LyricStudio();
         const visuals = new VisualsManager();
+        setVolume(Math.round(engine.audio.volume * 100));
+        els.views.forEach(v => {
+            const isMusic = v.id === 'music-view';
+            v.style.display = isMusic ? 'block' : 'none';
+            if (!isMusic) v.classList.remove('active');
+        });
         
         els.addBtn.addEventListener('click', () => {
             const input = document.createElement('input');
@@ -2203,9 +3743,11 @@
         const lPlay = document.getElementById('lyrics-play-btn');
         const lNext = document.getElementById('lyrics-next-btn');
         const lPrev = document.getElementById('lyrics-prev-btn');
+        const lVol = document.getElementById('lyrics-volume-range');
         if (lPlay) lPlay.addEventListener('click', () => engine.toggle());
         if (lNext) lNext.addEventListener('click', () => engine.next());
         if (lPrev) lPrev.addEventListener('click', () => engine.prev());
+        if (lVol) lVol.addEventListener('input', (e) => setVolume(e.target.value));
         
         if (els.playAllBtn) {
             els.playAllBtn.addEventListener('click', () => {
@@ -2221,34 +3763,363 @@
             });
         }
 
-        if (els.volumeRange) {
-            els.volumeRange.addEventListener('input', (e) => {
-                const vol = e.target.value / 100;
-                engine.audio.volume = vol;
+        if (els.miniVolumeRange) {
+            els.miniVolumeRange.addEventListener('input', (e) => setVolume(e.target.value));
+        }
+        if (els.mainVolumeRange) {
+            els.mainVolumeRange.addEventListener('input', (e) => setVolume(e.target.value));
+        }
+        
+        window.playMusic = (i, e) => {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            engine.play(i);
+        };
+        window.deleteMedia = deleteMedia;
+        window.lyricStudio = lyricStudio;
+        
+        // Prevent accidental global scrolling
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 0 || window.scrollX > 0) window.scrollTo(0, 0);
+        });
+        
+        // Search Filter Listener
+        const searchInput = document.getElementById('library-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', () => renderMusicList());
+        }
+        
+        if (els.librarySort) els.librarySort.addEventListener('change', () => renderMusicList());
+        if (els.libraryOrder) els.libraryOrder.addEventListener('change', () => renderMusicList());
+        
+        // Initialize settings UI values
+        if (els.accentSelect) els.accentSelect.value = settings.accentColor;
+        if (els.fontSelect) els.fontSelect.value = settings.uiFont;
+        if (els.baseScaleRange) els.baseScaleRange.value = settings.baseScale;
+        
+        // Apply appearance on load
+        (function applyAppearance() {
+            document.documentElement.style.setProperty('--accent-primary', settings.accentColor);
+            const glow = hexToRGBA(settings.accentColor, 0.5);
+            document.documentElement.style.setProperty('--accent-glow', glow);
+            document.documentElement.style.setProperty('--base-scale', settings.baseScale);
+            switch (settings.uiFont) {
+                case 'Outfit':
+                    document.documentElement.style.setProperty('--font-apple', `'Outfit', ${getSystemStack()}`);
+                    break;
+                case 'Plus Jakarta Sans':
+                    document.documentElement.style.setProperty('--font-apple', `'Plus Jakarta Sans', ${getSystemStack()}`);
+                    break;
+                case 'JetBrains Mono':
+                    document.documentElement.style.setProperty('--font-apple', `'JetBrains Mono', ${getSystemStack()}`);
+                    break;
+                default:
+                    document.documentElement.style.setProperty('--font-apple', getSystemStack());
+            }
+        })();
+        
+        function getSystemStack() {
+            return `-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif`;
+        }
+        function hexToRGBA(hex, alpha) {
+            const h = hex.replace('#','');
+            const bigint = parseInt(h, 16);
+            const r = (bigint >> 16) & 255;
+            const g = (bigint >> 8) & 255;
+            const b = bigint & 255;
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+        
+        // Settings listeners
+        if (els.accentSelect) els.accentSelect.addEventListener('change', () => {
+            settings.accentColor = els.accentSelect.value;
+            saveSettings(settings);
+            document.documentElement.style.setProperty('--accent-primary', settings.accentColor);
+            document.documentElement.style.setProperty('--accent-glow', hexToRGBA(settings.accentColor, 0.5));
+            showToast('Акцент обновлён', 'success');
+        });
+        if (els.fontSelect) els.fontSelect.addEventListener('change', () => {
+            settings.uiFont = els.fontSelect.value;
+            saveSettings(settings);
+            switch (settings.uiFont) {
+                case 'Outfit':
+                    document.documentElement.style.setProperty('--font-apple', `'Outfit', ${getSystemStack()}`);
+                    break;
+                case 'Plus Jakarta Sans':
+                    document.documentElement.style.setProperty('--font-apple', `'Plus Jakarta Sans', ${getSystemStack()}`);
+                    break;
+                case 'JetBrains Mono':
+                    document.documentElement.style.setProperty('--font-apple', `'JetBrains Mono', ${getSystemStack()}`);
+                    break;
+                default:
+                    document.documentElement.style.setProperty('--font-apple', getSystemStack());
+            }
+            showToast('Шрифт обновлён', 'success');
+        });
+        if (els.baseScaleRange) els.baseScaleRange.addEventListener('input', () => {
+            settings.baseScale = parseFloat(els.baseScaleRange.value);
+            saveSettings(settings);
+            document.documentElement.style.setProperty('--base-scale', settings.baseScale);
+        });
+        
+        // --- Theme Manager ---
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            let bg, glass, border;
+            switch(theme) {
+                case 'midnight':
+                    bg = '#0f172a'; // Slate 900
+                    glass = 'rgba(30, 41, 59, 0.4)';
+                    border = 'rgba(148, 163, 184, 0.1)';
+                    break;
+                case 'amoled':
+                    bg = '#000000';
+                    glass = 'rgba(20, 20, 20, 0.6)';
+                    border = 'rgba(50, 50, 50, 0.3)';
+                    break;
+                case 'twilight':
+                    bg = '#1e1b4b'; // Indigo 950
+                    glass = 'rgba(49, 46, 129, 0.4)';
+                    border = 'rgba(99, 102, 241, 0.1)';
+                    break;
+                default: // deep
+                    bg = '#020205';
+                    glass = 'rgba(255, 255, 255, 0.03)';
+                    border = 'rgba(255, 255, 255, 0.08)';
+            }
+            document.documentElement.style.setProperty('--bg-deep', bg);
+            document.documentElement.style.setProperty('--bg-body', bg);
+            document.documentElement.style.setProperty('--glass-bg', glass);
+            document.documentElement.style.setProperty('--glass-border', border);
+        }
+
+        // --- EQ Logic ---
+        window.setEQPreset = (name) => {
+            let gains = [0,0,0,0,0];
+            switch(name) {
+                case 'bass': gains = [8, 5, 0, 0, 0]; break;
+                case 'vocal': gains = [-2, -2, 4, 4, 2]; break;
+                case 'treble': gains = [0, 0, 0, 5, 8]; break;
+                case 'flat': default: gains = [0, 0, 0, 0, 0]; break;
+            }
+            engine.setEQ(gains);
+            settings.eqValues = gains;
+            saveSettings(settings);
+            // Update sliders
+            document.querySelectorAll('.eq-slider').forEach((sl, i) => sl.value = gains[i]);
+            showToast(`EQ Preset: ${name.charAt(0).toUpperCase() + name.slice(1)}`);
+        };
+
+        // Init Theme & EQ
+        setTheme(settings.theme);
+        if (document.getElementById('theme-select')) document.getElementById('theme-select').value = settings.theme;
+        
+        // Init EQ Sliders
+        const eqSliders = document.querySelectorAll('.eq-slider');
+        eqSliders.forEach((sl, i) => {
+            sl.value = settings.eqValues[i] || 0;
+            sl.addEventListener('input', (e) => {
+                settings.eqValues[i] = parseFloat(e.target.value);
+                engine.setEQ(settings.eqValues);
+                saveSettings(settings);
+            });
+        });
+        // Apply initial EQ
+        setTimeout(() => engine.setEQ(settings.eqValues), 1000);
+
+        // Listeners
+        if (document.getElementById('theme-select')) {
+            document.getElementById('theme-select').addEventListener('change', (e) => {
+                settings.theme = e.target.value;
+                saveSettings(settings);
+                setTheme(settings.theme);
+                showToast('Тема обновлена');
+            });
+        }
+
+        if (document.getElementById('karaoke-btn')) {
+            document.getElementById('karaoke-btn').addEventListener('click', () => engine.toggleKaraoke());
+        }
+
+        if (document.getElementById('mini-player-btn')) {
+            document.getElementById('mini-player-btn').addEventListener('click', () => {
+                document.body.classList.toggle('mini-mode');
+                const isMini = document.body.classList.contains('mini-mode');
+                document.getElementById('mini-player-btn').style.color = isMini ? 'var(--accent-primary)' : '#fff';
             });
         }
         
-        window.playMusic = (i) => engine.play(i);
-        window.deleteMedia = (id, t) => deleteMedia(id, t);
-        window.lyricStudio = lyricStudio;
+        if (els.exportLrcBtn) els.exportLrcBtn.addEventListener('click', () => {
+            const idx = state.currentEditingTrackIndex;
+            const track = state.musicList[idx];
+            if (!track || !track.lyrics || track.lyrics.length === 0) { showToast('Нет синхронизированной лирики для экспорта', 'error'); return; }
+            const fmt = (t) => {
+                const m = Math.floor(t / 60);
+                const s = Math.floor(t % 60);
+                const cs = Math.floor((t - Math.floor(t)) * 100);
+                const mm = String(m).padStart(2, '0');
+                const ss = String(s).padStart(2, '0');
+                const cc = String(cs).padStart(2, '0');
+                return `[${mm}:${ss}.${cc}]`;
+            };
+            const text = track.lyrics.map(l => `${fmt(l.time)} ${l.text}`).join('\n');
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            const name = `${(track.artist || '').trim()} - ${(track.title || '').trim()}`.trim() || 'lyrics';
+            a.download = `${name}.lrc`;
+            document.body.appendChild(a);
+            a.click();
+            URL.revokeObjectURL(a.href);
+            a.remove();
+            showToast('LRC экспортирован', 'success');
+        });
+        
+        if (els.importLrcBtn) els.importLrcBtn.addEventListener('click', () => {
+            const idx = state.currentEditingTrackIndex;
+            const track = state.musicList[idx];
+            if (!track) { showToast('Сначала выберите трек', 'error'); return; }
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.lrc,text/plain';
+            input.onchange = async (e) => {
+                const file = e.target.files && e.target.files[0];
+                if (!file) return;
+                try {
+                    const text = await file.text();
+                    const parsed = LyricsFetcher.parseLRC(text);
+                    if (!parsed || parsed.length === 0) { showToast('Файл LRC пуст или неверный', 'error'); return; }
+                    track.lyrics = parsed;
+                    track.lyricsSource = 'imported';
+                    if (storage.isSupported) storage.updateMetadata(track);
+                    lyricStudio.renderSyncPreview();
+                    lyricStudio.renderTrackList();
+                    showToast('Лирика импортирована из LRC', 'success');
+                } catch (err) {
+                    console.error(err);
+                    showToast('Не удалось импортировать LRC', 'error');
+                }
+            };
+            input.click();
+        });
+        
+        async function clearLibrary() {
+            if (!confirm('Очистить всю библиотеку?')) return;
+            try {
+                // Stop playback
+                engine.audio.pause();
+                state.isPlaying = false;
+                engine.updatePlayBtn();
+                
+                // Remove files from OPFS
+                const root = await navigator.storage.getDirectory();
+                const ids = [...sessionStore.files.keys()];
+                for (const id of ids) {
+                    const track = state.musicList.find(m => m.id === id);
+                    if (track && track.opfsName) {
+                        try { await root.removeEntry(track.opfsName); } catch {}
+                    }
+                }
+                sessionStore.files.clear();
+                
+                // Clear IndexedDB
+                if (storage.isSupported && storage.db) {
+                    const tx = storage.db.transaction('media', 'readwrite');
+                    tx.objectStore('media').clear();
+                }
+                
+                // Reset state
+                state.musicList = [];
+                state.currentTrackIndex = -1;
+                
+                renderMusicList();
+                lyricStudio.renderTrackList();
+                showToast('Библиотека очищена', 'success');
+            } catch (e) {
+                console.error(e);
+                showToast('Не удалось очистить библиотеку', 'error');
+            }
+        }
+        if (els.clearLibraryBtn) els.clearLibraryBtn.addEventListener('click', clearLibrary);
+        
+        if (els.toggleLRCLIB) els.toggleLRCLIB.addEventListener('change', () => {
+            settings.enableLRCLIB = els.toggleLRCLIB.checked;
+            saveSettings(settings);
+            showToast(settings.enableLRCLIB ? 'LRCLIB включён' : 'LRCLIB отключён');
+        });
+        if (els.toggleVisuals) els.toggleVisuals.addEventListener('change', () => {
+            settings.enableVisuals = els.toggleVisuals.checked;
+            saveSettings(settings);
+            visuals.setEnabled(settings.enableVisuals);
+            showToast(settings.enableVisuals ? 'Визуализации включены' : 'Визуализации отключены');
+        });
+        if (els.toggleFonts) els.toggleFonts.addEventListener('change', () => {
+            settings.useGoogleFonts = els.toggleFonts.checked;
+            saveSettings(settings);
+            if (settings.useGoogleFonts) {
+                if (!document.getElementById('google-fonts-link')) {
+                    const link = document.createElement('link');
+                    link.id = 'google-fonts-link';
+                    link.rel = 'stylesheet';
+                    link.href = 'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap';
+                    document.head.appendChild(link);
+                }
+            } else {
+                els.googleFontsLink?.remove();
+            }
+            showToast(settings.useGoogleFonts ? 'Шрифты включены' : 'Шрифты отключены');
+        });
 
         initProgressBar();
+        engine.initParallaxArt();
+        engine.initMiniParallax();
+            
+            // --- Profile & P2P Manager Removed ---
+            window.profileManager = null;
+            
+            // --- Chat Manager Removed ---
+            window.chatManager = null;
         
-        // --- Global Hotkeys (Spotify Style) ---
+            // --- Zen Mode Removed ---
+
         window.addEventListener('keydown', (e) => {
             // Ignore if user is typing in inputs
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                if (e.code === 'Escape') {
+                    e.target.blur();
+                }
+                return;
+            }
 
             switch(e.code) {
+                case 'Escape':
+                    // Close all overlays and menus
+                    if (state.lyricsOverlayOpen) {
+                        state.lyricsOverlayOpen = false;
+                        els.lyricsOverlayFs.classList.remove('active');
+                        document.body.classList.remove('lyrics-open');
+                        els.lyricsToggleBtn.style.color = '';
+                        showHUD('Выход из лирики');
+                    } else if (lyricStudio.isManualSyncing) {
+                        lyricStudio.finishManualSync(true);
+                    } else if (state.currentTab !== 'music') {
+                        // If in any other view, go back to Music view
+                        const musicBtn = Array.from(els.navBtns).find(b => b.dataset.tab === 'music');
+                        if (musicBtn) musicBtn.click();
+                        showHUD('Домой');
+                    }
+                    break;
                 case 'Space':
                     e.preventDefault();
                     engine.toggle();
-                    showHUD(state.isPlaying ? 'Play' : 'Pause', state.isPlaying ? '<path d="M8 5v14l11-7z"></path>' : '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>');
+                    showHUD(state.isPlaying ? 'Пуск' : 'Пауза', state.isPlaying ? '<path d="M8 5v14l11-7z"></path>' : '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>');
                     break;
                 case 'ArrowRight':
                     if (e.ctrlKey || e.metaKey) {
                         engine.next();
-                        showHUD('Next');
+                        showHUD('Следующий');
                     } else {
                         engine.seek(10);
                     }
@@ -2256,22 +4127,26 @@
                 case 'ArrowLeft':
                     if (e.ctrlKey || e.metaKey) {
                         engine.prev();
-                        showHUD('Previous');
+                        showHUD('Предыдущий');
                     } else {
                         engine.seek(-10);
                     }
                     break;
                 case 'ArrowUp':
                     e.preventDefault();
-                    els.volumeRange.value = Math.min(100, parseInt(els.volumeRange.value) + 5);
-                    engine.audio.volume = els.volumeRange.value / 100;
-                    showHUD(`Volume ${els.volumeRange.value}%`);
+                    {
+                        const newVal = Math.min(100, parseInt(els.miniVolumeRange.value) + 5);
+                        setVolume(newVal);
+                        showHUD(`Громкость ${newVal}%`);
+                    }
                     break;
                 case 'ArrowDown':
                     e.preventDefault();
-                    els.volumeRange.value = Math.max(0, parseInt(els.volumeRange.value) - 5);
-                    engine.audio.volume = els.volumeRange.value / 100;
-                    showHUD(`Volume ${els.volumeRange.value}%`);
+                    {
+                        const newVal = Math.max(0, parseInt(els.miniVolumeRange.value) - 5);
+                        setVolume(newVal);
+                        showHUD(`Громкость ${newVal}%`);
+                    }
                     break;
                 case 'KeyL':
                     els.lyricsToggleBtn.click();
@@ -2308,13 +4183,15 @@
             } catch (err) {
                 console.error("Storage initialization failed:", err);
                 showToast("Предупреждение: База данных недоступна. Изменения не будут сохранены.", "error");
+                renderMusicList();
             }
             
             // Initial UI state
             updateAccentColor(null);
             
-            // Environment Check for Telegram/File protocol
-            if (window.location.protocol === 'file:') {
+            // Environment Check for file protocol (skip inside Electron)
+            const isElectron = !!(window.process && window.process.versions && window.process.versions.electron);
+            if (!isElectron && window.location.protocol === 'file:') {
                 setTimeout(() => {
                     showToast("Вы открыли сайт как файл. Функции сохранения могут быть ограничены.", "info");
                 }, 1000);
